@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Eye Tracking Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .status-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #gaze-dot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: yellow;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Eye Tracking Test</h1>
+        
+        <div class="status-box">
+            <h2>Server Status</h2>
+            <div id="server-status">Checking...</div>
+        </div>
+        
+        <div class="status-box">
+            <h2>Controls</h2>
+            <button id="start-camera">Start Camera</button>
+            <button id="start-tracking">Start Tracking</button>
+            <button id="get-gaze" disabled>Start Gaze Tracking</button>
+            <button id="stop-gaze" disabled>Stop Gaze Tracking</button>
+        </div>
+        
+        <div class="status-box">
+            <h2>Gaze Data</h2>
+            <div id="gaze-data">No data yet</div>
+        </div>
+        
+        <div class="status-box">
+            <h2>Video Feed</h2>
+            <img id="video-feed" src="" alt="Video Feed" style="display: none; max-width: 100%; border: 1px solid #ccc;">
+        </div>
+    </div>
+    
+    <div id="gaze-dot"></div>
+    
+    <script>
+        const BASE_URL = 'http://localhost:5001';
+        let gazeTrackingInterval = null;
+        
+        // Check server status
+        async function checkServerStatus() {
+            try {
+                const response = await fetch(`${BASE_URL}/status`);
+                const data = await response.json();
+                document.getElementById('server-status').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                return data;
+            } catch (error) {
+                document.getElementById('server-status').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                return null;
+            }
+        }
+        
+        // Start camera
+        async function startCamera() {
+            try {
+                const response = await fetch(`${BASE_URL}/start_camera`);
+                const data = await response.json();
+                console.log('Camera started:', data);
+                updateUI();
+            } catch (error) {
+                console.error('Error starting camera:', error);
+            }
+        }
+        
+        // Start tracking
+        async function startTracking() {
+            try {
+                const response = await fetch(`${BASE_URL}/start_tracking`);
+                const data = await response.json();
+                console.log('Tracking started:', data);
+                updateUI();
+            } catch (error) {
+                console.error('Error starting tracking:', error);
+            }
+        }
+        
+        // Get gaze data
+        async function getGazeData() {
+            try {
+                const response = await fetch(`${BASE_URL}/get_enhanced_gaze`);
+                const data = await response.json();
+                console.log('Gaze data:', data);
+                
+                document.getElementById('gaze-data').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                // Update gaze dot position if we have valid data
+                if (data.success && data.gaze_position) {
+                    const [x, y] = data.gaze_position;
+                    updateGazeDot(x, y);
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Error getting gaze data:', error);
+                document.getElementById('gaze-data').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                return null;
+            }
+        }
+        
+        // Update gaze dot position
+        function updateGazeDot(xPercent, yPercent) {
+            const gazeDot = document.getElementById('gaze-dot');
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            // Convert percentage to pixel coordinates
+            const x = (xPercent / 100) * windowWidth;
+            const y = (yPercent / 100) * windowHeight;
+            
+            // Position the gaze dot
+            gazeDot.style.left = (x - 10) + 'px'; // Center the dot
+            gazeDot.style.top = (y - 10) + 'px'; // Center the dot
+            gazeDot.style.display = 'block';
+        }
+        
+        // Start gaze tracking
+        function startGazeTracking() {
+            if (gazeTrackingInterval) {
+                clearInterval(gazeTrackingInterval);
+            }
+            
+            gazeTrackingInterval = setInterval(async () => {
+                await getGazeData();
+            }, 100); // Update every 100ms
+            
+            document.getElementById('get-gaze').disabled = true;
+            document.getElementById('stop-gaze').disabled = false;
+        }
+        
+        // Stop gaze tracking
+        function stopGazeTracking() {
+            if (gazeTrackingInterval) {
+                clearInterval(gazeTrackingInterval);
+                gazeTrackingInterval = null;
+            }
+            
+            document.getElementById('get-gaze').disabled = false;
+            document.getElementById('stop-gaze').disabled = true;
+            
+            // Hide gaze dot
+            document.getElementById('gaze-dot').style.display = 'none';
+        }
+        
+        // Update UI based on server status
+        async function updateUI() {
+            const status = await checkServerStatus();
+            if (status) {
+                document.getElementById('start-tracking').disabled = !status.camera_status === 'active';
+                document.getElementById('get-gaze').disabled = !(status.camera_status === 'active' && status.tracking_active);
+            }
+        }
+        
+        // Initialize
+        async function init() {
+            await checkServerStatus();
+            updateUI();
+            
+            // Set up event listeners
+            document.getElementById('start-camera').addEventListener('click', startCamera);
+            document.getElementById('start-tracking').addEventListener('click', startTracking);
+            document.getElementById('get-gaze').addEventListener('click', startGazeTracking);
+            document.getElementById('stop-gaze').addEventListener('click', stopGazeTracking);
+            
+            // Also show video feed
+            document.getElementById('video-feed').src = `${BASE_URL}/video_feed`;
+            document.getElementById('video-feed').style.display = 'block';
+        }
+        
+        // Start when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

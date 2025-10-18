@@ -1,0 +1,309 @@
+/* Eye Exercises Page Styles */
+:root {
+    --primary-color: #3a86ff;
+    --secondary-color: #2b2d42;
+    --accent-color: #48cae4;
+    --success-color: #2a9d8f;
+    --warning-color: #e9c46a;
+    --danger-color: #e76f51;
+    --light-bg: #f8f9fa;
+    --dark-bg: #212529;
+    --card-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    --transition-speed: 0.3s;
+}
+
+/* Exercise Area Styling */
+#exercise-area {
+    min-height: 450px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    transition: background-color var(--transition-speed);
+    overflow: hidden;
+    position: relative;
+}
+
+#exercise-area.active {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+/* Animation Container */
+#animation {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    transition: all var(--transition-speed);
+}
+
+/* Target and Gaze Dot */
+#target {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #dc3545 0%, #c82333 100%);
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.5);
+    transition: all 0.5s ease-in-out;
+    z-index: 5;
+}
+
+/* Target when user's gaze is on it */
+#target.target-focused {
+    background-color: var(--bs-success);
+    box-shadow: 0 0 15px rgba(25, 135, 84, 0.7);
+    animation: pulse 1s infinite alternate;
+}
+
+#gaze-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: rgba(220, 53, 69, 0.7);
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+    z-index: 1000;
+    pointer-events: none;
+    display: none;
+    transition: transform 0.1s ease-out;
+    position: absolute;
+    transform-origin: center center;
+    animation: pulse 1.5s infinite;
+}
+
+/* Exercise List Styling */
+.list-group-item {
+    border-radius: 10px !important;
+    margin-bottom: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    transition: all var(--transition-speed);
+}
+
+.list-group-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow);
+}
+
+.list-group-item.active {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white;
+}
+
+/* Control Buttons */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: all var(--transition-speed);
+}
+
+.btn-primary:hover {
+    background-color: #2a75e6;
+    border-color: #2a75e6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(58, 134, 255, 0.3);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    transition: all var(--transition-speed);
+}
+
+.btn-secondary:hover {
+    background-color: #1e1f2f;
+    border-color: #1e1f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(43, 45, 66, 0.3);
+}
+
+.btn-danger {
+    transition: all var(--transition-speed);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(231, 111, 81, 0.3);
+}
+
+/* Camera Container */
+#camera-container {
+    width: 640px;
+    height: 480px;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    border: 3px solid var(--primary-color);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    transition: all var(--transition-speed);
+}
+
+#video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#camera-preview {
+    width: 100%;
+    height: 100%;
+}
+
+/* Exercise Timer and Status */
+#exercise-timer {
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--primary-color);
+}
+
+#exercise-status {
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Toast Notifications */
+#exercise-toast {
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+}
+
+.toast-header {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 10px 10px 0 0;
+}
+
+/* Calibration Overlay */
+#calibration-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    animation: fadeIn 0.5s;
+}
+
+#calibration-point {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    position: absolute;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px var(--primary-color);
+    animation: pulse 1s infinite alternate;
+}
+
+#calibration-progress {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 400px;
+}
+
+/* Ready Countdown */
+#ready-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 5rem;
+    font-weight: bold;
+    animation: fadeIn 0.3s;
+}
+
+#countdown-number {
+    animation: pulse 1s infinite alternate;
+}
+
+/* Focus Indicator */
+#focus-indicator {
+    transition: all 0.3s ease;
+    z-index: 50;
+    opacity: 0.9;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Form Switch */
+.form-switch .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Card Styling */
+.card {
+    border-radius: 15px;
+    box-shadow: var(--card-shadow);
+    border: none;
+    transition: all var(--transition-speed);
+}
+
+.card:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 15px 15px 0 0 !important;
+    padding: 1rem 1.25rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    #exercise-area {
+        min-height: 350px;
+    }
+    
+    #camera-container {
+        width: 160px;
+        height: 120px;
+    }
+}

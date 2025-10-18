@@ -1,0 +1,17 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "![EyeCare AI](https://img.shields.io/badge/EyeCare-AI-blue) ![Python](https://img.shields.io/badge/Python-3.8+-green) ![Flask](https://img.shields.io/badge/Flask-2.0+-orange) ![MediaPipe](https://img.shields.io/badge/MediaPipe-Computer%20Vision-red)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/memoizee": "^0.4.12",
+    "memoizee": "^0.4.17",
+    "openid-client": "^6.6.2"
+  }
+}

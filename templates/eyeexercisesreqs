@@ -1,0 +1,988 @@
+eye_exercises.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Exercise Tracker with Real Eye Tracking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #3a86ff;
+            --secondary-color: #2b2d42;
+            --accent-color: #48cae4;
+            --success-color: #2a9d8f;
+            --warning-color: #e9c46a;
+            --danger-color: #e76f51;
+            --light-bg: #f8f9fa;
+            --dark-bg: #212529;
+            --card-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            overflow-x: hidden;
+        }
+
+        #exercise-area {
+            min-height: 500px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            transition: background-color var(--transition-speed);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #exercise-area.active {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+
+        #animation {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            transition: all var(--transition-speed);
+        }
+
+        #target {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #dc3545 0%, #c82333 100%);
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.6);
+            transition: all 0.3s ease;
+            position: absolute;
+            z-index: 5;
+            display: none;
+            border: 3px solid white;
+            cursor: none;
+        }
+
+        #target.target-focused {
+            background: radial-gradient(circle, #28a745 0%, #1e7e34 100%);
+            box-shadow: 0 0 30px rgba(40, 167, 69, 0.8);
+            transform: scale(1.2);
+            animation: success-pulse 0.5s ease-in-out;
+        }
+
+        @keyframes success-pulse {
+            0%, 100% { transform: scale(1.2); }
+            50% { transform: scale(1.4); }
+        }
+
+        #gaze-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 0, 0.9);
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.7);
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            border: 2px solid #fff;
+            transition: all 0.1s ease;
+        }
+
+        .list-group-item {
+            border-radius: 10px !important;
+            margin-bottom: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.125);
+            transition: all var(--transition-speed);
+            cursor: pointer;
+        }
+
+        .list-group-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow);
+        }
+
+        .list-group-item.active {
+            background-color: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+            color: white;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            transition: all var(--transition-speed);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #2a75e6;
+            border-color: #2a75e6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.3);
+        }
+
+        #camera-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: 640px; /* Increased width for medium size */
+            height: 480px; /* Increased height for medium size */
+            border: 3px solid var(--primary-color);
+            border-radius: 15px 15px 0 0;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            background: white;
+            z-index: 1000;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transform: scaleX(-1); /* Mirror the video feed */
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border-radius: 15px;
+        }
+
+        #calibration-overlay {
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            text-align: center;
+        }
+
+        #ready-overlay {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+        }
+
+        #calibration-point {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: #dc3545;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 25px rgba(220, 53, 69, 0.8);
+            border: 3px solid white;
+            transition: all 0.3s ease;
+            animation: calibration-pulse 1.5s infinite;
+        }
+
+        @keyframes calibration-pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        #countdown-number {
+            font-size: 6rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: countdown-pulse 1s ease-in-out;
+        }
+
+        @keyframes countdown-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        #focus-indicator {
+            transition: all 0.3s ease;
+            z-index: 50;
+            opacity: 0.95;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            min-width: 200px;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            border: none;
+            transition: all var(--transition-speed);
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1rem 1.25rem;
+        }
+
+        .exercise-icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+        }
+
+        /* Add visual feedback for clickable elements */
+        .clickable-button, .list-group-item {
+            cursor: pointer !important;
+        }
+
+        .clickable-button:hover, .list-group-item:hover {
+            opacity: 0.9;
+        }
+
+        /* Add visual feedback for active buttons */
+        .btn:disabled {
+            opacity: 0.6;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            #exercise-area { min-height: 400px; }
+            #camera-container { width: 150px !important; height: 120px !important; }
+            #countdown-number { font-size: 4rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <div class="mb-3">
+                    <i class="bi bi-eye-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                </div>
+                <h1 class="mb-3">Eye Exercise Tracker</h1>
+                <p class="lead">Advanced eye tracking exercises to reduce strain and improve eye health.</p>
+                <div class="d-flex justify-content-center gap-3 mb-3">
+                    <span class="badge bg-light text-dark p-2"><i class="bi bi-clock me-1"></i> Timed Sessions</span>
+                    <span class="badge bg-light text-dark p-2"><i class="bi bi-bullseye me-1"></i> Real Eye Tracking</span>
+                    <span class="badge bg-light text-dark p-2"><i class="bi bi-graph-up me-1"></i> Live Feedback</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Exercise Area</h5>
+                        <div>
+                            <span class="badge bg-primary" id="exercise-timer">00:00</span>
+                            <span class="badge bg-secondary" id="exercise-status">Ready</span>
+                        </div>
+                    </div>
+                    <div class="card-body" id="exercise-area">
+                        <div id="animation">
+                            <div class="display-1 mb-4">
+                                <i class="bi bi-eye-fill" style="color: var(--primary-color); animation: pulse 2s infinite;"></i>
+                            </div>
+                            <h3 class="mb-3">Select an exercise to begin</h3>
+                            <p class="text-muted">Choose from our scientifically designed eye exercises</p>
+                            <p class="small text-info"><i class="bi bi-info-circle me-1"></i>Enable eye tracking for best results</p>
+                        </div>
+
+                        <div id="target"></div>
+
+                        <div id="gaze-dot"></div>
+
+                        <div id="calibration-overlay" class="overlay" style="display: none;">
+                            <h3 class="mb-3"><i class="bi bi-crosshair me-2"></i>Eye Calibration</h3>
+                            <p class="text-center mb-4 px-4">
+                                Look directly at each red dot and keep your gaze steady.<br>
+                                The dot will turn green when calibration is complete.<br>
+                                <small class="text-warning">Keep your head still and look only with your eyes.</small>
+                            </p>
+                            <div id="calibration-point"></div>
+                            <div class="position-absolute bottom-0 start-0 end-0 p-3">
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div id="calibration-progress-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                                </div>
+                                <p class="text-center small mb-0">
+                                    Calibrating point <span id="calibration-point-number">1</span> of <span id="calibration-total-points">9</span>
+                                    <br><span id="calibration-instruction">Look at the red dot</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div id="ready-overlay" class="overlay" style="display: none;">
+                            <h1 id="countdown-number">3</h1>
+                            <p class="mt-3 h5">Get ready to focus...</p>
+                        </div>
+
+                        <div id="focus-indicator" class="position-absolute top-0 end-0 m-3 p-3 bg-white border" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i id="focus-icon" class="bi bi-eye-fill me-2" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <div id="focus-message" style="font-weight: 600;">Focus on target</div>
+                                    <div id="focus-accuracy" class="small">Accuracy: 0%</div>
+                                    <div id="gaze-accuracy" class="small">Gaze Accuracy: 0%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="progress-container" class="position-absolute bottom-0 start-0 end-0 p-3" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">Exercise Progress</small>
+                                <span id="exercise-progress" class="badge bg-primary">0%</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div id="progress-bar" class="progress-bar bg-primary" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Instructions</h5>
+                    </div>
+                    <div class="card-body" id="exercise-instructions">
+                        <div class="alert alert-info">
+                            <div class="d-flex">
+                                <i class="bi bi-lightbulb-fill me-3" style="font-size: 1.5rem;"></i>
+                                <div>
+                                    <p class="mb-2"><strong>How to use:</strong></p>
+                                    <ol class="mb-2">
+                                        <li>Enable eye tracking toggle below</li>
+                                        <li>Allow camera permission when prompted</li>
+                                        <li>Select an exercise from the list</li>
+                                        <li>Complete calibration by looking at red dots</li>
+                                        <li>Follow the target with your eyes during exercise</li>
+                                    </ol>
+                                    <p class="mb-0 small text-muted">Green indicator = Good focus | Red indicator = Need to refocus</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Exercise Selection</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group" id="exerciseList">
+                            <div class="list-group-item list-group-item-action" data-exercise="twenty-twenty-twenty">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-bullseye exercise-icon" style="color: var(--primary-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">20-20-20 Exercise</h6>
+                                            <p class="mb-0 small text-muted">Focus on a distant object</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">2 min</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item list-group-item-action" data-exercise="focus-change">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-infinity exercise-icon" style="color: var(--success-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Focus Change</h6>
+                                            <p class="mb-0 small text-muted">Alternate between near and far</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">3 min</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item list-group-item-action" data-exercise="eye-rolling">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-arrow-clockwise exercise-icon" style="color: var(--accent-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Eye Rolling</h6>
+                                            <p class="mb-0 small text-muted">Relieve muscle tension</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">2 min</span>
+                                </div>
+                            </div>
+                           <div class="list-group-item list-group-item-action" data-exercise="palming">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-hand-index-fill exercise-icon" style="color: var(--warning-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Palming</h6>
+                                            <p class="mb-0 small text-muted">Relax your eye muscles</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">5 min</span>
+                                </div>
+                            </div>
+                           <div class="list-group-item list-group-item-action" data-exercise="figure-eight">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-infinity exercise-icon" style="color: var(--danger-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Figure Eight</h6>
+                                            <p class="mb-0 small text-muted">Improve eye tracking</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">2 min</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>Controls</h5>
+                    </div>
+                    <div class="card-body">
+                         <button id="startExerciseBtn" class="btn btn-primary mb-3 w-100">
+                            <i class="bi bi-play-fill me-2"></i> Start Exercise
+                        </button>
+                        <button id="pauseExerciseBtn" class="btn btn-secondary mb-3 w-100" disabled>
+                            <i class="bi bi-pause-fill me-2"></i> Pause
+                        </button>
+                        <button id="resetExerciseBtn" class="btn btn-danger mb-3 w-100" disabled>
+                            <i class="bi bi-stop-fill me-2"></i> Reset
+                        </button>
+                        <div id="tracking-status" class="alert alert-info small mb-0" style="display: none;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <span id="tracking-message">Eye tracking ready</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="camera-container" style="position: fixed; bottom: 20px; right: 20px; width: 640px; height: 480px; display: none; z-index: 1000; border: 3px solid var(--primary-color); border-radius: 15px 15px 0 0; overflow: hidden; box-shadow: var(--card-shadow); background: white;">
+        <div class="d-flex justify-content-between align-items-center bg-primary text-white p-2">
+            <small><i class="bi bi-camera-video-fill me-1"></i> Eye Tracking</small>
+            <button type="button" class="btn-close btn-close-white btn-sm" id="close-camera"></button>
+        </div>
+        <div id="camera-preview" style="width: 100%; height: calc(100% - 30px); background-color: #000;"></div>
+    </div>
+
+    <div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/eye_exercises_logic.js') }}"></script>
+</body>
+</html>
+
+Step 2: js/eye_exercises_logic.js (The New Code)
+Now, copy and paste this entire code block into your js/eye_exercises_logic.js file. This will replace your old logic with a clean, working version that correctly interacts with the new HTML.
+
+// Exercise definitions
+const exercises = {
+    'twenty-twenty-twenty': {
+        name: '20-20-20 Exercise',
+        description: 'Every 20 minutes, look at something 20 feet away for 20 seconds.',
+        duration: 120, // 2 minutes in seconds
+        steps: [
+            { text: 'Find an object about 20 feet away to focus on', duration: 10, tracking: { type: 'gaze_zone', target: 'far' } },
+            { text: 'Look at the object and focus on its details', duration: 20, tracking: { type: 'gaze_zone', target: 'far', accuracy: 0.8 } },
+            { text: 'Slowly blink 5 times while maintaining focus', duration: 10, tracking: { type: 'blink_count', target: 5 } },
+            { text: 'Close your eyes and rest for 5 seconds', duration: 5, tracking: { type: 'eyes_closed', accuracy: 0.9 } },
+            { text: 'Open your eyes and focus on the object again', duration: 20, tracking: { type: 'gaze_zone', target: 'far', accuracy: 0.8 } },
+            { text: 'Look at something nearby for 10 seconds', duration: 10, tracking: { type: 'gaze_zone', target: 'near', accuracy: 0.8 } },
+            { text: 'Look back at the distant object for 20 seconds', duration: 20, tracking: { type: 'gaze_zone', target: 'far', accuracy: 0.8 } },
+            { text: 'Blink rapidly for 5 seconds', duration: 5, tracking: { type: 'blink_rapid', accuracy: 0.7 } },
+            { text: 'Close your eyes and rest', duration: 20, tracking: { type: 'eyes_closed', accuracy: 0.9 } }
+        ],
+        trackingZones: {
+            far: { x: 0.1, y: 0.1, width: 0.8, height: 0.8 },
+            near: { x: 0.3, y: 0.3, width: 0.4, height: 0.4 }
+        },
+        animation: function(step) {
+            const animationDiv = document.getElementById('animation');
+
+            // This function will be called by WebGazer to get the expected gaze
+            window.getCurrentExpectedGaze = function() {
+                if (currentExercise && currentStepIndex < currentExercise.steps.length) {
+                    return currentExercise.steps[currentStepIndex].expectedGaze;
+                }
+                return null;
+            };
+
+            if (step === 0) {
+                // Initialize animation
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 20px; top: 50px;"></i>
+                        <i class="bi bi-arrow-right" style="font-size: 2rem; color: #777; position: absolute; left: 80px; top: 55px;"></i>
+                        <i class="bi bi-tree" style="font-size: 3rem; color: #2a9d8f; position: absolute; right: 20px; top: 50px;"></i>
+                        <div style="margin-top: 120px;">Look at something 20 feet away</div>
+                    </div>
+                `;
+            } else if (step === 1 || step === 4 || step === 6) {
+                // Focus on distant object
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 20px; top: 50px;"></i>
+                        <i class="bi bi-arrow-right" style="font-size: 2rem; color: #777; position: absolute; left: 80px; top: 55px;"></i>
+                        <i class="bi bi-tree" style="font-size: 3rem; color: #2a9d8f; position: absolute; right: 20px; top: 50px;"></i>
+                        <div class="position-absolute" style="right: 30px; top: 30px; width: 40px; height: 40px; border: 2px solid red; border-radius: 50%; animation: pulse 1s infinite;"></div>
+                        <div style="margin-top: 120px;">Focus on the distant object</div>
+                    </div>
+                `;
+            } else if (step === 2) {
+                // Blink while focusing
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 20px; top: 50px;"></i>
+                        <i class="bi bi-arrow-right" style="font-size: 2rem; color: #777; position: absolute; left: 80px; top: 55px;"></i>
+                        <i class="bi bi-tree" style="font-size: 3rem; color: #2a9d8f; position: absolute; right: 20px; top: 50px;"></i>
+                        <div style="margin-top: 120px;">Blink slowly 5 times</div>
+                    </div>
+                `;
+            } else if (step === 3 || step === 8) {
+                // Close eyes and rest
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 20px; top: 50px;"></i>
+                        <div style="position: absolute; left: 25px; top: 55px; width: 30px; height: 8px; background-color: #3a86ff; border-radius: 5px;"></div>
+                        <div style="margin-top: 120px;">Close your eyes and rest</div>
+                    </div>
+                `;
+            } else if (step === 5) {
+                // Look at something nearby
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 20px; top: 50px;"></i>
+                        <i class="bi bi-arrow-right" style="font-size: 2rem; color: #777; position: absolute; left: 80px; top: 55px;"></i>
+                        <i class="bi bi-book" style="font-size: 2rem; color: #e76f51; position: absolute; left: 120px; top: 55px;"></i>
+                        <div class="position-absolute" style="left: 125px; top: 45px; width: 30px; height: 30px; border: 2px solid red; border-radius: 50%; animation: pulse 1s infinite;"></div>
+                        <div style="margin-top: 120px;">Look at something nearby</div>
+                    </div>
+                `;
+            } else if (step === 7) {
+                // Blink rapidly
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 20px; top: 50px;"></i>
+                        <div style="position: absolute; left: 25px; top: 55px; width: 30px; height: 8px; background-color: #3a86ff; border-radius: 5px; animation: blink 0.5s infinite;"></div>
+                        <div style="margin-top: 120px;">Blink rapidly</div>
+                    </div>
+                `;
+            }
+        }
+    },
+    'focus-change': {
+        name: 'Focus Change Exercise',
+        description: 'Alternating focus between near and far objects to exercise eye muscles.',
+        duration: 180, // 3 minutes in seconds
+        steps: [
+            { text: 'Hold your thumb about 10 inches from your face', duration: 10, tracking: { type: 'setup' } },
+            { text: 'Focus on your thumb for 10 seconds', duration: 10, tracking: { type: 'gaze_zone', target: 'near', accuracy: 0.8 } },
+            { text: 'Look at something in the distance for 10 seconds', duration: 10, tracking: { type: 'gaze_zone', target: 'far', accuracy: 0.8 } },
+            { text: 'Return focus to your thumb for 10 seconds', duration: 10, tracking: { type: 'gaze_zone', target: 'near', accuracy: 0.8 } },
+            { text: 'Look at the distant object again for 10 seconds', duration: 10, tracking: { type: 'gaze_zone', target: 'far', accuracy: 0.8 } },
+            { text: 'Repeat this cycle 5 more times', duration: 100, tracking: { type: 'focus_cycles', target: 5, accuracy: 0.7 } },
+            { text: 'Close your eyes and rest for 30 seconds', duration: 30, tracking: { type: 'eyes_closed', accuracy: 0.9 } }
+        ],
+        trackingZones: {
+            near: { x: 0.3, y: 0.4, width: 0.2, height: 0.2 },
+            far: { x: 0.7, y: 0.4, width: 0.2, height: 0.2 }
+        },
+        animation: function(step) {
+            const animationDiv = document.getElementById('animation');
+
+            if (step === 0) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-hand-thumbs-up" style="font-size: 2rem; color: #e76f51; position: absolute; left: 120px; top: 55px;"></i>
+                        <div style="margin-top: 120px;">Hold your thumb about 10 inches from your face</div>
+                    </div>
+                `;
+            } else if (step === 1 || step === 3) {
+                // Focus on thumb
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-hand-thumbs-up" style="font-size: 2rem; color: #e76f51; position: absolute; left: 120px; top: 55px;"></i>
+                        <div class="position-absolute" style="left: 125px; top: 45px; width: 30px; height: 30px; border: 2px solid red; border-radius: 50%; animation: pulse 1s infinite;"></div>
+                        <div style="margin-top: 120px;">Focus on your thumb</div>
+                    </div>
+                `;
+            } else if (step === 2 || step === 4) {
+                // Focus on distant object
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-hand-thumbs-up" style="font-size: 2rem; color: #777; position: absolute; left: 120px; top: 55px;"></i>
+                        <i class="bi bi-tree" style="font-size: 3rem; color: #2a9d8f; position: absolute; right: 50px; top: 50px;"></i>
+                        <div class="position-absolute" style="right: 60px; top: 40px; width: 40px; height: 40px; border: 2px solid red; border-radius: 50%; animation: pulse 1s infinite;"></div>
+                        <div style="margin-top: 120px;">Look at something in the distance</div>
+                    </div>
+                `;
+            } else if (step === 5) {
+                // Repeat cycle animation
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-hand-thumbs-up" style="font-size: 2rem; color: #e76f51; position: absolute; left: 120px; top: 55px;"></i>
+                        <i class="bi bi-tree" style="font-size: 3rem; color: #2a9d8f; position: absolute; right: 50px; top: 50px;"></i>
+                        <div class="position-absolute" style="left: 160px; top: 60px; font-size: 2rem; color: #777;">⟷</div>
+                        <div style="margin-top: 120px;">Alternate focus between near and far</div>
+                    </div>
+                `;
+            } else if (step === 6) {
+                // Rest
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <div style="position: absolute; left: 55px; top: 55px; width: 30px; height: 8px; background-color: #3a86ff; border-radius: 5px;"></div>
+                        <div style="margin-top: 120px;">Close your eyes and rest</div>
+                    </div>
+                `;
+            }
+        }
+    },
+    'eye-rolling': {
+        name: 'Eye Rolling Exercise',
+        description: 'Roll your eyes in different directions to relieve muscle tension.',
+        duration: 120, // 2 minutes
+        steps: [
+            { text: 'Look up as far as you can', duration: 10, tracking: { type: 'gaze_direction', target: 'up', accuracy: 0.7 } },
+            { text: 'Roll your eyes clockwise slowly for 30 seconds', duration: 30, tracking: { type: 'circular_motion', direction: 'clockwise', accuracy: 0.6 } },
+            { text: 'Look down as far as you can', duration: 10, tracking: { type: 'gaze_direction', target: 'down', accuracy: 0.7 } },
+            { text: 'Roll your eyes counter-clockwise slowly for 30 seconds', duration: 30, tracking: { type: 'circular_motion', direction: 'counter-clockwise', accuracy: 0.6 } },
+            { text: 'Close your eyes and rest for 20 seconds', duration: 20, tracking: { type: 'eyes_closed', accuracy: 0.9 } }
+        ],
+        trackingDirections: {
+            up: { x: 0.5, y: 0.1, tolerance: 0.2 },
+            down: { x: 0.5, y: 0.9, tolerance: 0.2 },
+            left: { x: 0.1, y: 0.5, tolerance: 0.2 },
+            right: { x: 0.9, y: 0.5, tolerance: 0.2 }
+        },
+        animation: function(step) {
+            const animationDiv = document.getElementById('animation');
+
+            if (step === 0) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-arrow-up" style="font-size: 2rem; color: #777; position: absolute; left: 60px; top: 20px;"></i>
+                        <div style="margin-top: 120px;">Look up</div>
+                    </div>
+                `;
+            } else if (step === 1) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-arrow-clockwise" style="font-size: 3rem; color: #777; position: absolute; left: 50px; top: 40px; animation: spin-clockwise 2s infinite linear;"></i>
+                        <div style="margin-top: 120px;">Roll eyes clockwise</div>
+                    </div>
+                `;
+            }
+        },
+        verification: function(gazeDirection) {
+            // Logic for Eye Rolling Exercise verification
+            // This is a simplified example. Real implementation would track a sequence of movements.
+            const currentStep = currentExerciseStep;
+            const expectedDirection = exercises[currentExerciseType].steps[currentStep].expectedGaze;
+
+            if (expectedDirection && gazeDirection === expectedDirection) {
+                console.log(`Correct gaze: ${gazeDirection}`);
+                // Provide positive visual feedback
+                document.getElementById('exerciseVisual').style.borderColor = 'green';
+            } else if (expectedDirection) {
+                console.log(`Incorrect gaze: ${gazeDirection}, expected: ${expectedDirection}`);
+                // Provide negative visual feedback
+                document.getElementById('exerciseVisual').style.borderColor = 'red';
+            }
+        }
+    },
+    'palming': {
+        name: 'Palming Exercise',
+        description: 'Cover your closed eyes with warm palms to relax eye muscles.',
+        duration: 300, // 5 minutes
+        steps: [
+            { text: 'Rub your palms together to generate warmth', duration: 10, tracking: { type: 'setup' } },
+            { text: 'Gently cup your warm palms over your closed eyes', duration: 10, tracking: { type: 'hands_position', accuracy: 0.8 } },
+            { text: 'Ensure no light seeps through. Relax and breathe deeply.', duration: 280, tracking: { type: 'eyes_closed', accuracy: 0.9 } },
+            { text: 'Slowly remove your hands and open your eyes', duration: 10, tracking: { type: 'eyes_open', accuracy: 0.8 } }
+        ],
+        animation: function(step) {
+            const animationDiv = document.getElementById('animation');
+
+            if (step === 0) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-hand-thumbs-up" style="font-size: 3rem; color: #e76f51; position: absolute; left: 40px; top: 50px;"></i>
+                        <i class="bi bi-hand-thumbs-up" style="font-size: 3rem; color: #e76f51; position: absolute; left: 80px; top: 50px; transform: scaleX(-1);"></i>
+                        <div style="margin-top: 120px;">Rub palms together</div>
+                    </div>
+                `;
+            } else if (step === 1 || step === 2) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-hand-index-fill" style="font-size: 3rem; color: #e76f51; position: absolute; left: 30px; top: 40px; transform: rotate(45deg);"></i>
+                        <i class="bi bi-hand-index-fill" style="font-size: 3rem; color: #e76f51; position: absolute; left: 70px; top: 40px; transform: rotate(-45deg) scaleX(-1);"></i>
+                        <div style="margin-top: 120px;">Cup palms over eyes</div>
+                    </div>
+                `;
+            } else if (step === 3) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <div style="margin-top: 120px;">Slowly open eyes</div>
+                    </div>
+                `;
+            }
+        }
+    },
+    'figure-eight': {
+        name: 'Figure Eight Exercise',
+        description: 'Trace an imaginary figure 8 with your eyes to improve tracking.',
+        duration: 120, // 2 minutes
+        steps: [
+            { text: 'Imagine a large figure eight on the floor about 10 feet in front of you', duration: 10, tracking: { type: 'setup' } },
+            { text: 'Slowly trace the figure eight with your eyes for 30 seconds', duration: 30, tracking: { type: 'figure_eight', direction: 'forward', accuracy: 0.6 } },
+            { text: 'Reverse the direction and trace the figure eight for another 30 seconds', duration: 30, tracking: { type: 'figure_eight', direction: 'reverse', accuracy: 0.6 } },
+            { text: 'Close your eyes and rest for 20 seconds', duration: 20, tracking: { type: 'eyes_closed', accuracy: 0.9 } }
+        ],
+        animation: function(step) {
+            const animationDiv = document.getElementById('animation');
+
+            if (step === 0) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-infinity" style="font-size: 5rem; color: #777; position: absolute; left: 40px; top: 30px;"></i>
+                        <div style="margin-top: 120px;">Imagine a figure eight</div>
+                    </div>
+                `;
+            } else if (step === 1) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-infinity" style="font-size: 5rem; color: #777; position: absolute; left: 40px; top: 30px; animation: trace-figure-eight 2s infinite linear;"></i>
+                        <div style="margin-top: 120px;">Trace figure eight clockwise</div>
+                    </div>
+                `;
+            } else if (step === 2) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <i class="bi bi-infinity" style="font-size: 5rem; color: #777; position: absolute; left: 40px; top: 30px; animation: trace-figure-eight-reverse 2s infinite linear;"></i>
+                        <div style="margin-top: 120px;">Trace figure eight counter-clockwise</div>
+                    </div>
+                `;
+            } else if (step === 3) {
+                animationDiv.innerHTML = `
+                    <div class="position-relative">
+                        <i class="bi bi-person" style="font-size: 3rem; color: #3a86ff; position: absolute; left: 50px; top: 50px;"></i>
+                        <div style="position: absolute; left: 55px; top: 55px; width: 30px; height: 8px; background-color: #3a86ff; border-radius: 5px;"></div>
+                        <div style="margin-top: 120px;">Close your eyes and rest</div>
+                    </div>
+                `;
+            }
+        }
+    }
+};
+
+// DOM elements
+const startExerciseBtn = document.getElementById('startExerciseBtn');
+const pauseExerciseBtn = document.getElementById('pauseExerciseBtn');
+const resetExerciseBtn = document.getElementById('resetExerciseBtn');
+const timerDisplay = document.getElementById('exercise-timer');
+const exerciseNameDisplay = document.getElementById('exerciseName');
+const exerciseDescriptionDisplay = document.getElementById('exerciseDescription');
+const exerciseProgress = document.getElementById('progress-bar');
+const currentStepText = document.getElementById('currentStepText');
+const currentStepSpan = document.getElementById('currentStep');
+const totalStepsSpan = document.getElementById('totalSteps');
+const exerciseList = document.getElementById('exerciseList');
+const animationContainer = document.getElementById('animation');
+const trackingStatus = document.getElementById('tracking-status');
+const trackingMessage = document.getElementById('tracking-message');
+
+// Exercise state
+let activeEyeExerciseType = 'twenty-twenty-twenty'; // Default exercise
+let currentExercise = exercises['twenty-twenty-twenty'];
+let currentStepIndex = 0;
+let timeLeftInStep = 0;
+let totalTimeElapsed = 0;
+let timerInterval;
+let isPaused = false;
+let trackingActive = false;
+let trackingResults = [];
+
+// Function to update UI based on current exercise and step
+function updateUI() {
+    if(!currentExercise) return;
+
+    // Update exercise name and description
+    const selectedExerciseItem = document.querySelector(`.list-group-item[data-exercise="${activeEyeExerciseType}"]`);
+    if(selectedExerciseItem){
+        const name = selectedExerciseItem.querySelector('h6').textContent;
+        const description = selectedExerciseItem.querySelector('p').textContent;
+        // You might want to display this info somewhere
+        // For now, we'll just log it
+        console.log(`Current Exercise: ${name} - ${description}`);
+    }
+
+    if(totalStepsSpan) totalStepsSpan.textContent = currentExercise.steps.length;
+    if(currentStepSpan) currentStepSpan.textContent = currentStepIndex + 1;
+    if(currentStepText) currentStepText.textContent = currentExercise.steps[currentStepIndex].text;
+
+    // Update progress bar
+    const progressPercentage = (totalTimeElapsed / currentExercise.duration) * 100;
+    if(exerciseProgress) exerciseProgress.style.width = `${progressPercentage}%`;
+
+    // Update timer display
+    const minutes = Math.floor(totalTimeElapsed / 60);
+    const seconds = totalTimeElapsed % 60;
+    if(timerDisplay) timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    // Update animation
+    if(currentExercise.animation) currentExercise.animation(currentStepIndex);
+
+    // Update tracking for current step
+    const step = currentExercise.steps[currentStepIndex];
+    if (trackingActive && step.tracking) {
+        updateTrackingFeedback(step.tracking);
+    }
+}
+
+// Function to start the exercise
+function startExercise() {
+    if (!currentExercise) return;
+
+    // Enable/disable buttons
+    if(startExerciseBtn) startExerciseBtn.disabled = true;
+    if(pauseExerciseBtn) pauseExerciseBtn.disabled = false;
+    if(resetExerciseBtn) resetExerciseBtn.disabled = false;
+
+    if (isPaused) {
+        isPaused = false;
+    } else {
+        currentStepIndex = 0;
+        totalTimeElapsed = 0;
+        timeLeftInStep = currentExercise.steps[currentStepIndex].duration;
+        updateUI();
+        if (window.startEyeExercise) {
+            window.startEyeExercise();
+        }
+    }
+
+    timerInterval = setInterval(() => {
+        if (isPaused) return;
+
+        timeLeftInStep--;
+        totalTimeElapsed++;
+
+        if (timeLeftInStep <= 0) {
+            currentStepIndex++;
+            if (currentStepIndex < currentExercise.steps.length) {
+                timeLeftInStep = currentExercise.steps[currentStepIndex].duration;
+            } else {
+                clearInterval(timerInterval);
+                endExercise();
+                return;
+            }
+        }
+        updateUI();
+    }, 1000);
+}
+
+// Function to pause the exercise
+function pauseExercise() {
+    isPaused = true;
+    clearInterval(timerInterval);
+    if(startExerciseBtn) startExerciseBtn.disabled = false;
+    if(pauseExerciseBtn) pauseExerciseBtn.disabled = true;
+    if (window.stopEyeExercise) {
+        window.stopEyeExercise();
+    }
+}
+
+// Function to reset the exercise
+function resetExercise() {
+    clearInterval(timerInterval);
+
+    isPaused = false;
+    currentStepIndex = 0;
+    totalTimeElapsed = 0;
+
+    if(currentExercise){
+        timeLeftInStep = currentExercise.steps[currentStepIndex].duration;
+    }
+    
+    trackingActive = false;
+    trackingResults = [];
+
+    updateUI();
+    if(startExerciseBtn) startExerciseBtn.disabled = false;
+    if(pauseExerciseBtn) pauseExerciseBtn.disabled = true;
+    if(resetExerciseBtn) resetExerciseBtn.disabled = true;
+
+    if (window.stopEyeExercise) {
+        window.stopEyeExercise();
+    }
+}
+
+// Function to end the exercise
+function endExercise() {
+    activeEyeExerciseType = null;
+    clearInterval(timerInterval);
+    if(startExerciseBtn) startExerciseBtn.disabled = false;
+    if(pauseExerciseBtn) pauseExerciseBtn.disabled = true;
+    if(resetExerciseBtn) resetExerciseBtn.disabled = true;
+    if(currentStepText) currentStepText.textContent = 'Exercise Completed!';
+    if(exerciseProgress) exerciseProgress.style.width = '100%';
+
+    if (window.stopEyeExercise) {
+        window.stopEyeExercise();
+    }
+
+    trackingActive = false;
+}
+
+// Event Listeners
+if(startExerciseBtn) startExerciseBtn.addEventListener('click', startExercise);
+if(pauseExerciseBtn) pauseExerciseBtn.addEventListener('click', pauseExercise);
+if(resetExerciseBtn) resetExerciseBtn.addEventListener('click', resetExercise);
+
+if(exerciseList){
+    exerciseList.addEventListener('click', (event) => {
+        const button = event.target.closest('.list-group-item-action');
+        if (button) {
+            document.querySelectorAll('.list-group-item-action').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            activeEyeExerciseType = button.dataset.exercise;
+            currentExercise = exercises[activeEyeExerciseType];
+            resetExercise();
+        }
+    });
+}
+
+
+// Initial UI setup
+document.addEventListener('DOMContentLoaded', () => {
+    // Select the first exercise by default
+    const firstExercise = exerciseList.querySelector('.list-group-item-action');
+    if(firstExercise){
+        firstExercise.classList.add('active');
+        activeEyeExerciseType = firstExercise.dataset.exercise;
+        currentExercise = exercises[activeEyeExerciseType];
+    }
+    resetExercise();
+});

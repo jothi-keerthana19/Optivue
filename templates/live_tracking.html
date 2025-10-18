@@ -1,0 +1,688 @@
+{% extends "layout.html" %}
+
+{% block title %}Live Eye Tracking{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-4">Live Eye Tracking</h1>
+        <p class="lead">Monitor your eye health in real-time. Track your blink rate and detect signs of drowsiness.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-camera-video"></i> Camera Feed</span>
+                    <span class="badge bg-secondary tracking-status">Tracking Inactive</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="alertsContainer"></div>
+                
+                <div class="camera-feed-wrapper" style="position: relative; background-color: #1a1a1a; height: 480px; border-radius: 15px; overflow: hidden; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
+                    <!-- Live camera feed -->
+                    <video id="videoInput" style="position: absolute; width: 1px; height: 1px; opacity: 0;"></video>
+                    <canvas id="canvasOutput" style="width: 100%; height: 100%; object-fit: cover;"></canvas>
+                    
+                    <!-- Status message overlay -->
+                    <div style="position: absolute; top: 10px; left: 10px; right: 10px; text-align: center; color: white; background-color: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; z-index: 100;">
+                        <span id="status">Waiting for camera access...</span>
+                    </div>
+                    
+                    <!-- Metrics overlays -->
+                    <div class="blink-status" style="position: absolute; top: 50px; left: 50px; color: white; background-color: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; z-index: 100;">
+                        Blink Rate: <span class="blink-value">0.0</span> bpm
+                    </div>
+                    
+                    <div class="drowsiness-status" style="position: absolute; top: 50px; right: 50px; color: white; background-color: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; z-index: 100;">
+                        Drowsiness: <span class="drowsiness-value">0%</span>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-3">
+                    <button class="btn btn-primary tracking-toggle">
+                        <i class="bi bi-play-circle"></i> Start Tracking
+                    </button>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-secondary" id="screenshotBtn">
+                            <i class="bi bi-camera"></i> Take Screenshot
+                        </button>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sensitivityModal">
+                            <i class="bi bi-sliders"></i> Adjust Sensitivity
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-eye"></i> Eye Metrics
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Blink Rate
+                        <span id="blinkRateValue" class="badge bg-primary rounded-pill">0.0 bpm</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Blink Duration
+                        <span id="blinkDurationValue" class="badge bg-primary rounded-pill">0 ms</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Drowsiness Level
+                        <span id="drowsinessValue" class="badge bg-success rounded-pill">0%</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        PERCLOS
+                        <span id="perclosValue" class="badge bg-primary rounded-pill">0%</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Total Blinks
+                        <span id="totalBlinksValue" class="badge bg-info rounded-pill total-blinks">0</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Session Duration
+                        <span id="sessionDurationValue" class="badge bg-secondary rounded-pill">00:00</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Eye Strain Level
+                        <span id="eyeStrainValue" class="badge bg-warning rounded-pill">0%</span>
+                    </li>
+                </ul>
+                <div class="mt-2">
+                    <small id="metricsTimestamp" class="text-muted">Last updated: --</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bell"></i> Active Monitoring
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="drowsinessAlerts" checked>
+                    <label class="form-check-label" for="drowsinessAlerts">Drowsiness Alerts</label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="blinkRateMonitoring" checked>
+                    <label class="form-check-label" for="blinkRateMonitoring">Blink Rate Monitoring</label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="breakReminders" checked>
+                    <label class="form-check-label" for="breakReminders">Break Reminders</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="gazeTracking">
+                    <label class="form-check-label" for="gazeTracking">Gaze Tracking</label>
+                </div>
+                
+                <hr>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Look directly at the camera for best detection results.
+                </div>
+                
+                <div class="d-grid gap-2 mt-3">
+                    <button class="btn btn-outline-primary btn-sm" id="backgroundModeBtn">
+                        <i class="bi bi-display"></i> Run in Background
+                    </button>
+                </div>
+                
+                <!-- Rest Reminder Settings -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="bi bi-clock"></i> Rest Reminders</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="reminderInterval" class="form-label">Reminder Interval</label>
+                            <select class="form-select form-select-sm" id="reminderInterval" onchange="updateReminderInterval(this.value)">
+                                <option value="10">Every 10 minutes</option>
+                                <option value="15">Every 15 minutes</option>
+                                <option value="20" selected>Every 20 minutes (recommended)</option>
+                                <option value="30">Every 30 minutes</option>
+                                <option value="60">Every hour</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="testRestReminder()">
+                                <i class="bi bi-play"></i> Test Reminder
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="showReminderInfo()">
+                                <i class="bi bi-info-circle"></i> About 20-20-20 Rule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sensitivity Settings Modal -->
+<div class="modal fade" id="sensitivityModal" tabindex="-1" aria-labelledby="sensitivityModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sensitivityModalLabel">Adjust Detection Sensitivity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="eyeDetectionSensitivity" class="form-label">Eye Detection Sensitivity</label>
+                    <input type="range" class="form-range" min="1" max="10" value="5" id="eyeDetectionSensitivity">
+                    <div class="d-flex justify-content-between">
+                        <small>Low</small>
+                        <small>High</small>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="drowsinessThreshold" class="form-label">Drowsiness Alert Threshold</label>
+                    <input type="range" class="form-range" min="40" max="80" value="60" id="drowsinessThreshold">
+                    <div class="d-flex justify-content-between">
+                        <small>Early (40%)</small>
+                        <small>Late (80%)</small>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="minHealthyBlinkRate" class="form-label">Minimum Healthy Blink Rate</label>
+                    <input type="number" class="form-control" id="minHealthyBlinkRate" value="15" min="10" max="25">
+                    <small class="text-muted">Blinks per minute below this value trigger alerts</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Background Mode Modal -->
+<div class="modal fade" id="backgroundModeModal" tabindex="-1" aria-labelledby="backgroundModeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="backgroundModeModalLabel">Background Monitoring</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Eye tracking is now running in the background. You'll continue to receive notifications about:</p>
+                <ul>
+                    <li>Drowsiness detection</li>
+                    <li>Low blink rate warnings</li>
+                    <li>Break reminders</li>
+                </ul>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> You can minimize this window and continue your work. The app will monitor your eye health in the background.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+    import { initElements, startCamera, stopCamera } from '/static/js/enhanced_eye_detection.js';
+    
+    // Make functions available globally for debugging
+    window.startCamera = startCamera;
+    window.stopCamera = stopCamera;
+    window.initElements = initElements;
+    import { BreakReminderSystem } from '/static/js/break_reminder_system.js';
+    import { RestReminderSystem } from '/static/js/rest_reminders.js';
+    import { Analytics } from '/static/js/analytics.js';
+
+    let sessionStartTime = null;
+    let sessionTimer = null;
+    let breakReminderSystem = null;
+    let restReminders = null;
+    let analytics = null;
+
+    // Update session duration
+    function updateSessionDuration() {
+        if (!sessionStartTime) return;
+        
+        const now = new Date();
+        const diff = Math.floor((now - sessionStartTime) / 1000);
+        const minutes = Math.floor(diff / 60);
+        const seconds = diff % 60;
+        
+        const formatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        const sessionDurationElement = document.getElementById('sessionDurationValue');
+        if (sessionDurationElement) {
+            sessionDurationElement.textContent = formatted;
+        }
+    }
+    
+    // Start session timer
+    function startSessionTimer() {
+        sessionStartTime = new Date();
+        sessionTimer = setInterval(updateSessionDuration, 1000);
+    }
+    
+    // Stop session timer
+    function stopSessionTimer() {
+        clearInterval(sessionTimer);
+        sessionTimer = null;
+    }
+
+    // Function to initialize tracking session
+    function initializeTrackingSession() {
+        fetch('/api/start-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Session initialized:', data);
+            startSessionTimer();
+        })
+        .catch(error => console.error('Session initialization failed:', error));
+    }
+
+    // Function to update analytics from server
+    function updateAnalyticsFromServer() {
+        if (analytics) {
+            analytics.fetchAndDisplayAnalytics();
+        }
+    }
+
+    // Function to handle real-time metrics updates via EventSource
+    function setupLiveMetricsStream() {
+        const eventSource = new EventSource('/api/live-metrics');
+        
+        eventSource.onmessage = function(event) {
+            try {
+                const metrics = JSON.parse(event.data);
+                
+                // Update the UI with real-time metrics
+                updateLiveMetricsDisplay(metrics);
+                
+            } catch (error) {
+                console.error('Error parsing live metrics:', error);
+            }
+        };
+        
+        eventSource.onerror = function(error) {
+            console.error('EventSource error:', error);
+            // Fall back to polling if EventSource fails
+            eventSource.close();
+            
+            // Set up polling as fallback
+            setInterval(() => {
+                updateAnalyticsFromServer();
+            }, 5000); // Poll every 5 seconds as fallback
+        };
+    }
+
+    // Function to update the live metrics display
+    function updateLiveMetricsDisplay(metrics) {
+        // Update blink rate
+        const blinkRateElement = document.getElementById('blinkRateValue');
+        if (blinkRateElement) {
+            blinkRateElement.textContent = metrics.blink_rate.toFixed(1);
+            
+            // Apply color coding based on thresholds
+            if (metrics.blink_rate < 12) {
+                blinkRateElement.className = 'metric-value text-danger';
+            } else if (metrics.blink_rate < 15) {
+                blinkRateElement.className = 'metric-value text-warning';
+            } else {
+                blinkRateElement.className = 'metric-value text-success';
+            }
+        }
+        
+        // Update blink duration
+        const blinkDurationElement = document.getElementById('blinkDurationValue');
+        if (blinkDurationElement) {
+            blinkDurationElement.textContent = metrics.blink_duration.toFixed(2) + 's';
+        }
+        
+        // Update drowsiness level
+        const drowsinessElement = document.getElementById('drowsinessValue');
+        if (drowsinessElement) {
+            drowsinessElement.textContent = metrics.drowsiness_level.toFixed(1) + '%';
+            
+            // Apply color coding based on thresholds
+            if (metrics.drowsiness_level > 50) {
+                drowsinessElement.className = 'metric-value text-danger';
+            } else if (metrics.drowsiness_level > 30) {
+                drowsinessElement.className = 'metric-value text-warning';
+            } else {
+                drowsinessElement.className = 'metric-value text-success';
+            }
+        }
+        
+        // Update PERCLOS
+        const perclosElement = document.getElementById('perclosValue');
+        if (perclosElement) {
+            perclosElement.textContent = metrics.perclos.toFixed(1) + '%';
+            
+            // Apply color coding based on thresholds
+            if (metrics.perclos > 20) {
+                perclosElement.className = 'metric-value text-danger';
+            } else if (metrics.perclos > 15) {
+                perclosElement.className = 'metric-value text-warning';
+            } else {
+                perclosElement.className = 'metric-value text-success';
+            }
+        }
+        
+        // Update total blinks
+        const totalBlinksElement = document.getElementById('totalBlinksValue');
+        if (totalBlinksElement) {
+            totalBlinksElement.textContent = metrics.total_blinks;
+        }
+        
+        // Update session duration
+        const sessionDurationElement = document.getElementById('sessionDurationValue');
+        if (sessionDurationElement) {
+            const minutes = Math.floor(metrics.session_duration / 60);
+            const seconds = Math.floor(metrics.session_duration % 60);
+            sessionDurationElement.textContent = `${minutes}m ${seconds}s`;
+        }
+        
+        // Update eye strain level
+        const eyeStrainElement = document.getElementById('eyeStrainValue');
+        if (eyeStrainElement) {
+            eyeStrainElement.textContent = metrics.eye_strain_level.toFixed(1) + '%';
+            
+            // Apply color coding based on thresholds
+            if (metrics.eye_strain_level > 60) {
+                eyeStrainElement.className = 'badge bg-danger rounded-pill';
+            } else if (metrics.eye_strain_level > 40) {
+                eyeStrainElement.className = 'badge bg-warning rounded-pill';
+            } else {
+                eyeStrainElement.className = 'badge bg-success rounded-pill';
+            }
+        }
+        
+        // Update timestamp
+        const timestampElement = document.getElementById('metricsTimestamp');
+        if (timestampElement) {
+            const timestamp = new Date(metrics.timestamp);
+            timestampElement.textContent = timestamp.toLocaleTimeString();
+        }
+    }
+
+    // Fetch and display recent notifications
+    function loadRecentNotifications() {
+        fetch('/api/notifications')
+            .then(response => response.json())
+            .then(notifications => {
+                const alertsContainer = document.getElementById('alertsContainer');
+                alertsContainer.innerHTML = '';
+                
+                // Show only unread notifications from last hour
+                const oneHourAgo = Date.now() - (60 * 60 * 1000);
+                const recentNotifs = notifications.filter(n => 
+                    !n.is_read && new Date(n.timestamp).getTime() > oneHourAgo
+                );
+                
+                recentNotifs.slice(0, 3).forEach(notification => {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = `alert alert-${notification.severity === 'warning' ? 'warning' : 'info'} alert-dismissible fade show`;
+                    alertDiv.innerHTML = `
+                        <strong>${notification.type.replace('_', ' ').toUpperCase()}</strong>
+                        <p class="mb-0">${notification.message}</p>
+                        <button type="button" class="btn-close" onclick="markNotificationRead(${notification.id})"></button>
+                    `;
+                    alertsContainer.appendChild(alertDiv);
+                });
+            })
+            .catch(error => console.log('Notifications loading failed:', error));
+    }
+
+    function markNotificationRead(notificationId) {
+        fetch('/api/mark-notification-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: notificationId })
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!initElements()) {
+            console.error('Failed to initialize eye detection elements.');
+            return;
+        }
+        
+        // Ensure tracking button is properly initialized
+        let trackingButton = document.querySelector('.tracking-toggle');
+        if (trackingButton) {
+            trackingButton.innerHTML = '<i class="bi bi-play-circle"></i> Start Tracking';
+        }
+
+        // Initialize Analytics
+        analytics = new Analytics();
+
+        // Initialize break reminder system
+        breakReminderSystem = new BreakReminderSystem();
+        breakReminderSystem.startReminderSystem();
+        console.log('Break reminder system started');
+        
+        // Initialize rest reminder system
+        restReminders = new RestReminderSystem();
+        // RestReminderSystem initializes automatically in constructor
+        console.log('Rest reminder system started');
+
+        // Real-time analytics updates via EventSource
+        setupLiveMetricsStream();
+        
+        // Load notifications on page load
+        loadRecentNotifications();
+        
+        // Start session when tracking begins
+        initializeTrackingSession();
+
+        // Take a screenshot
+        document.getElementById('screenshotBtn').addEventListener('click', function() {
+            // The `streaming` variable is defined in enhanced_eye_detection.js
+            // Since enhanced_eye_detection.js is a module, its variables are not globally accessible.
+            // We need to find a way to access the `streaming` status.
+            // For now, let's assume `streaming` is accessible or pass it as a parameter if needed.
+            // This part might need further refinement if `streaming` is not directly accessible.
+            // if (!streaming) {
+            //     alert('Please start tracking first to take a screenshot.');
+            //     return;
+            // }
+            
+            const canvas = document.getElementById('canvasOutput');
+            const dataURL = canvas.toDataURL('image/png');
+            
+            // Create an invisible link element and trigger download
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = `eyecare_screenshot_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Show confirmation
+            const alertsContainer = document.getElementById('alertsContainer');
+            const alertElement = document.createElement('div');
+            alertElement.className = 'alert alert-success alert-dismissible fade show';
+            alertElement.innerHTML = `
+                <strong>Screenshot Saved!</strong> The image has been downloaded to your device.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            alertsContainer.appendChild(alertElement);
+            
+            // Auto dismiss after 3 seconds
+            setTimeout(() => {
+                alertElement.classList.remove('show');
+                setTimeout(() => alertElement.remove(), 150);
+            }, 3000);
+        });
+        
+        // Background mode button
+        document.getElementById('backgroundModeBtn').addEventListener('click', function() {
+            // Show the background mode modal
+            const backgroundModal = new bootstrap.Modal(document.getElementById('backgroundModeModal'));
+            backgroundModal.show();
+        });
+        
+        // Handle browser visibility changes for background mode
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Page is hidden (user switched tabs or minimized)
+                console.log('Page is now in background mode');
+                
+                // Could add specific background behavior here
+            } else {
+                // Page is visible again
+                console.log('Page is now visible again');
+            }
+        });
+        
+        // Override tracking toggle button to also handle session timer
+        trackingButton = document.querySelector('.tracking-toggle');
+        if (trackingButton) {
+            trackingButton.addEventListener('click', async function() {
+                const icon = this.querySelector('i');
+                const isStarting = icon.classList.contains('bi-play-circle');
+
+                if (isStarting) {
+                    // Start tracking
+                    try {
+                        await startCamera();  // Use the imported function directly
+                        startSessionTimer();
+                        initializeTrackingSession();
+                        
+                        // Request notification permission
+                        if ('Notification' in window && Notification.permission === 'default') {
+                            Notification.requestPermission();
+                        }
+                        
+                        console.log('Tracking started successfully');
+                    } catch (error) {
+                        console.error('Failed to start tracking:', error);
+                        // Try global fallback
+                        if (typeof window.startEyeTracking === 'function') {
+                            try {
+                                await window.startEyeTracking();
+                                startSessionTimer();
+                                initializeTrackingSession();
+                                console.log('Tracking started via global fallback');
+                            } catch (fallbackError) {
+                                console.error('Fallback also failed:', fallbackError);
+                                alert('Failed to start camera. Please check camera permissions and refresh the page.');
+                            }
+                        } else {
+                            alert('Failed to start camera. Please refresh the page and try again.');
+                        }
+                    }
+                } else {
+                    // Stop tracking
+                    try {
+                        stopCamera();  // Use the imported function directly
+                        stopSessionTimer();
+                        
+                        // End session
+                        fetch('/api/end-session', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include'
+                        }).catch(error => console.error('Failed to end session:', error));
+                        
+                        console.log('Tracking stopped successfully');
+                    } catch (error) {
+                        console.error('Failed to stop tracking:', error);
+                        // Try global fallback
+                        if (typeof window.stopEyeTracking === 'function') {
+                            try {
+                                window.stopEyeTracking();
+                                stopSessionTimer();
+                                console.log('Tracking stopped via global fallback');
+                            } catch (fallbackError) {
+                                console.error('Fallback stop also failed:', fallbackError);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Rest reminder functions
+        function updateReminderInterval(minutes) {
+            if (restReminders) {
+                restReminders.setReminderInterval(parseInt(minutes));
+            }
+        }
+        
+        function testRestReminder() {
+            if (restReminders) {
+                restReminders.triggerReminder();
+            } else {
+                alert('Rest reminder system not loaded yet. Please wait a moment and try again.');
+            }
+        }
+        
+        function showReminderInfo() {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade show';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">The 20-20-20 Rule</h5>
+                            <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <h6>What is the 20-20-20 Rule?</h6>
+                            <p>Every 20 minutes, look at something 20 feet away for at least 20 seconds.</p>
+                            
+                            <h6>Why is it important?</h6>
+                            <ul>
+                                <li>Reduces digital eye strain</li>
+                                <li>Prevents dry eyes</li>
+                                <li>Relaxes focusing muscles</li>
+                                <li>Improves long-term eye health</li>
+                            </ul>
+                            
+                            <h6>How our reminders help:</h6>
+                            <ul>
+                                <li>Gentle notifications at customizable intervals</li>
+                                <li>Guided 20-second break timer</li>
+                                <li>Breathing exercises for relaxation</li>
+                                <li>Eye strain relief overlay</li>
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="this.closest('.modal').remove()">Got it!</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Expose functions to global scope for inline event handlers
+        window.updateReminderInterval = updateReminderInterval;
+        window.testRestReminder = testRestReminder;
+        window.showReminderInfo = showReminderInfo;
+        window.markNotificationRead = markNotificationRead;
+    });
+</script>
+{% endblock %}

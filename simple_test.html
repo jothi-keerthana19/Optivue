@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Eye Tracking Test</title>
+</head>
+<body>
+    <h1>Eye Tracking Test</h1>
+    <div id="status">Checking server status...</div>
+    <div id="camera-status"></div>
+    <div id="gaze-data"></div>
+    <button id="start-camera">Start Camera</button>
+    <button id="start-tracking">Start Tracking</button>
+    <button id="get-gaze">Get Gaze Data</button>
+    
+    <script>
+        const BASE_URL = 'http://localhost:5001';
+        
+        // Check server status
+        fetch(`${BASE_URL}/status`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').innerHTML = `<h2>Server Status:</h2><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            })
+            .catch(error => {
+                document.getElementById('status').innerHTML = `<h2>Error:</h2><p>${error.message}</p>`;
+            });
+        
+        // Start camera button
+        document.getElementById('start-camera').addEventListener('click', function() {
+            fetch(`${BASE_URL}/start_camera`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('camera-status').innerHTML = `<h2>Camera Status:</h2><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                })
+                .catch(error => {
+                    document.getElementById('camera-status').innerHTML = `<h2>Camera Error:</h2><p>${error.message}</p>`;
+                });
+        });
+        
+        // Start tracking button
+        document.getElementById('start-tracking').addEventListener('click', function() {
+            fetch(`${BASE_URL}/start_tracking`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('camera-status').innerHTML += `<h2>Tracking Status:</h2><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                })
+                .catch(error => {
+                    document.getElementById('camera-status').innerHTML += `<h2>Tracking Error:</h2><p>${error.message}</p>`;
+                });
+        });
+        
+        // Get gaze data button
+        document.getElementById('get-gaze').addEventListener('click', function() {
+            fetch(`${BASE_URL}/get_enhanced_gaze`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('gaze-data').innerHTML = `<h2>Gaze Data:</h2><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                })
+                .catch(error => {
+                    document.getElementById('gaze-data').innerHTML = `<h2>Gaze Data Error:</h2><p>${error.message}</p>`;
+                });
+        });
+    </script>
+</body>
+</html>

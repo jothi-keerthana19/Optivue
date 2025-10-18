@@ -1,0 +1,98 @@
+body {
+    background-color: #f8f9ff;
+    color: #0d47a1;
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+}
+
+.bg-primary {
+    background-color: #0d47a1 !important;
+    color: #fff !important;
+}
+
+.bg-accent {
+    background-color: #26a69a !important;
+    color: #fff !important;
+}
+
+.bg-light-blue {
+    background-color: #e3f2fd !important;
+    color: #0d47a1 !important;
+}
+
+.text-primary {
+    color: #1565c0 !important;
+}
+
+.text-accent {
+    color: #26a69a !important;
+}
+
+.btn-primary {
+    background-color: #1565c0;
+    border-color: #1565c0;
+    color: #fff;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #0d47a1;
+    border-color: #0d47a1;
+}
+
+.btn-secondary {
+    background-color: #26a69a;
+    border-color: #26a69a;
+    color: #fff;
+}
+
+.btn-secondary:hover, .btn-secondary:focus {
+    background-color: #42a5f5;
+    border-color: #42a5f5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #0d47a1;
+}
+
+.lead {
+    color: #1565c0;
+}
+
+.card {
+    background-color: #e3f2fd;
+    border: none;
+    color: #0d47a1;
+}
+
+.metric-value {
+    color: #26a69a;
+}
+
+/* Utility classes */
+.bg-offwhite {
+    background-color: #f8f9ff !important;
+    color: #0d47a1 !important;
+}
+
+.bg-light {
+    background-color: #e3f2fd !important;
+    color: #0d47a1 !important;
+}
+
+.text-dark {
+    color: #0d47a1 !important;
+}
+
+.text-light {
+    color: #fff !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        font-size: 1.1rem;
+    }
+    .container {
+        padding: 1rem;
+    }
+}

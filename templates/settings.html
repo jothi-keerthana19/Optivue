@@ -1,0 +1,834 @@
+{% extends "layout.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-4">Settings</h1>
+        <p class="lead">Customize your eye health monitoring experience.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-bell"></i> Notifications
+            </div>
+            <div class="card-body">
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="drowsinessAlerts" checked>
+                        <label class="form-check-label" for="drowsinessAlerts">Drowsiness Alerts</label>
+                    </div>
+                    <small class="text-muted">Get alerts when signs of drowsiness are detected</small>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="blinkRateAlerts" checked>
+                        <label class="form-check-label" for="blinkRateAlerts">Blink Rate Reminders</label>
+                    </div>
+                    <small class="text-muted">Remind me to blink more when my blink rate is low</small>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="breakReminders" checked>
+                        <label class="form-check-label" for="breakReminders">Break Reminders</label>
+                    </div>
+                    <small class="text-muted">Remind me to take breaks based on the 20-20-20 rule</small>
+                </div>
+                
+                <div class="settings-option">
+                    <label for="breakInterval" class="form-label">Break Reminder Interval</label>
+                    <select class="form-select" id="breakInterval" onchange="updateReminderInterval()">
+                        <option value="15">Every 15 minutes</option>
+                        <option value="20" selected>Every 20 minutes</option>
+                        <option value="30">Every 30 minutes</option>
+                        <option value="45">Every 45 minutes</option>
+                        <option value="60">Every 60 minutes</option>
+                    </select>
+                </div>
+                
+                <script>
+                function updateReminderInterval() {
+                    const interval = document.getElementById('breakInterval').value;
+                    localStorage.setItem('reminderInterval', interval);
+                    
+                    // Update rest reminder system if it exists
+                    if (window.restReminders) {
+                        window.restReminders.setReminderInterval(parseInt(interval));
+                    }
+                    
+                    // Update break reminder system if it exists
+                    if (window.breakReminderSystem) {
+                        window.breakReminderSystem.setReminderInterval(parseInt(interval));
+                    }
+                    
+                    // Show confirmation
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success mt-2';
+                    alert.textContent = `Reminder interval updated to ${interval} minutes`;
+                    document.getElementById('breakInterval').parentNode.appendChild(alert);
+                    
+                    setTimeout(() => alert.remove(), 3000);
+                }
+                
+                // Load saved setting on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    const saved = localStorage.getItem('reminderInterval');
+                    if (saved) {
+                        document.getElementById('breakInterval').value = saved;
+                    }
+                });
+                </script>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-moon"></i> Appearance
+            </div>
+            <div class="card-body">
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                        <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
+                    </div>
+                    <small class="text-muted">Switch to dark color scheme</small>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="highContrastMode">
+                        <label class="form-check-label" for="highContrastMode">High Contrast Mode</label>
+                    </div>
+                    <small class="text-muted">Increase text contrast for better readability</small>
+                </div>
+                
+                <div class="settings-option">
+                    <label for="textSize" class="form-label">Text Size</label>
+                    <select class="form-select" id="textSize">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                        <option value="x-large">Extra Large</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-eye"></i> Eye Tracking
+            </div>
+            <div class="card-body">
+                <div class="settings-option">
+                    <label for="eyeDetectionSensitivity" class="form-label">Eye Detection Sensitivity</label>
+                    <input type="range" class="form-range" min="1" max="10" value="5" id="eyeDetectionSensitivity">
+                    <div class="d-flex justify-content-between">
+                        <small>Low</small>
+                        <small>High</small>
+                    </div>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="useInfraredMode">
+                        <label class="form-check-label" for="useInfraredMode">Use Infrared Detection (if available)</label>
+                    </div>
+                    <small class="text-muted">Better detection in low light conditions</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-sliders"></i> Alert Thresholds
+                <button class="btn btn-sm btn-outline-primary float-end" id="saveThresholds">Save Thresholds</button>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Customize when you receive alerts based on your eye health metrics.
+                </div>
+                
+                <div class="settings-option">
+                    <label for="blinkRateThreshold" class="form-label">Blink Rate Threshold <span class="threshold-value">(15)</span></label>
+                    <input type="range" class="form-range" min="5" max="30" value="15" id="blinkRateThreshold">
+                    <div class="d-flex justify-content-between">
+                        <small>5 blinks/min</small>
+                        <small>30 blinks/min</small>
+                    </div>
+                    <small class="text-muted">Blinks per minute below this value will trigger alerts</small>
+                </div>
+                
+                <div class="settings-option">
+                    <label for="drowsinessThreshold" class="form-label">Drowsiness Alert Threshold <span class="threshold-value">(60%)</span></label>
+                    <input type="range" class="form-range" min="30" max="90" value="60" id="drowsinessThreshold">
+                    <div class="d-flex justify-content-between">
+                        <small>Early (30%)</small>
+                        <small>Late (90%)</small>
+                    </div>
+                    <small class="text-muted">Drowsiness level above this percentage will trigger alerts</small>
+                </div>
+                
+                <div class="settings-option">
+                    <label for="eyeStrainThreshold" class="form-label">Eye Strain Threshold <span class="threshold-value">(70%)</span></label>
+                    <input type="range" class="form-range" min="30" max="90" value="70" id="eyeStrainThreshold">
+                    <div class="d-flex justify-content-between">
+                        <small>Early (30%)</small>
+                        <small>Late (90%)</small>
+                    </div>
+                    <small class="text-muted">Eye strain level above this percentage will trigger alerts</small>
+                </div>
+                
+                <div class="settings-option">
+                    <label for="screenTimeThreshold" class="form-label">Daily Screen Time Threshold <span class="threshold-value">(120 min)</span></label>
+                    <input type="range" class="form-range" min="30" max="480" value="120" id="screenTimeThreshold">
+                    <div class="d-flex justify-content-between">
+                        <small>30 min</small>
+                        <small>8 hours</small>
+                    </div>
+                    <small class="text-muted">Daily screen time above this value will trigger alerts</small>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="notificationsEnabled" checked>
+                        <label class="form-check-label" for="notificationsEnabled">Enable All Health Notifications</label>
+                    </div>
+                    <small class="text-muted">Master switch for all health-related notifications</small>
+                </div>
+                
+                <script>
+                 // Update threshold value display when sliders change
+                 function updateThresholdDisplay(inputId, unitSuffix = '') {
+                     const input = document.getElementById(inputId);
+                     const displaySpan = input.parentElement.querySelector('.threshold-value');
+                     
+                     input.addEventListener('input', function() {
+                         let displayValue = this.value;
+                         if (inputId === 'screenTimeThreshold') {
+                             // Convert minutes to hours and minutes for display if over 60 minutes
+                             if (displayValue >= 60) {
+                                 const hours = Math.floor(displayValue / 60);
+                                 const minutes = displayValue % 60;
+                                 displayValue = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+                             } else {
+                                 displayValue = `${displayValue}m`;
+                             }
+                         } else {
+                             displayValue = `${displayValue}${unitSuffix}`;
+                         }
+                         displaySpan.textContent = `(${displayValue})`;
+                     });
+                 }
+                 
+                 // Initialize threshold displays
+                 document.addEventListener('DOMContentLoaded', function() {
+                     updateThresholdDisplay('blinkRateThreshold', ' blinks/min');
+                     updateThresholdDisplay('drowsinessThreshold', '%');
+                     updateThresholdDisplay('eyeStrainThreshold', '%');
+                     updateThresholdDisplay('screenTimeThreshold');
+                     fetchUserThresholds();
+                 });
+                 
+                 // Fetch current user thresholds from API
+                 async function fetchUserThresholds() {
+                     try {
+                         const response = await fetch('/api/user-thresholds');
+                         if (!response.ok) {
+                             throw new Error('Failed to fetch user thresholds');
+                         }
+                         const thresholds = await response.json();
+                         
+                         // Update UI with fetched thresholds
+                         document.getElementById('blinkRateThreshold').value = thresholds.blink_rate || 15;
+                         document.getElementById('drowsinessThreshold').value = thresholds.drowsiness || 60;
+                         document.getElementById('eyeStrainThreshold').value = thresholds.eye_strain || 70;
+                         document.getElementById('screenTimeThreshold').value = thresholds.screen_time || 120;
+                         document.getElementById('notificationsEnabled').checked = thresholds.notifications_enabled !== false;
+                         
+                         // Trigger display updates
+                         document.getElementById('blinkRateThreshold').dispatchEvent(new Event('input'));
+                         document.getElementById('drowsinessThreshold').dispatchEvent(new Event('input'));
+                         document.getElementById('eyeStrainThreshold').dispatchEvent(new Event('input'));
+                         document.getElementById('screenTimeThreshold').dispatchEvent(new Event('input'));
+                         
+                     } catch (error) {
+                         console.error('Error fetching user thresholds:', error);
+                         showAlert('error', 'Failed to load your threshold settings. Using defaults.');
+                     }
+                 }
+                 
+                 // Save user thresholds to API
+                 document.getElementById('saveThresholds').addEventListener('click', async function() {
+                     const thresholds = {
+                         blink_rate: parseInt(document.getElementById('blinkRateThreshold').value),
+                         drowsiness: parseInt(document.getElementById('drowsinessThreshold').value),
+                         eye_strain: parseInt(document.getElementById('eyeStrainThreshold').value),
+                         screen_time: parseInt(document.getElementById('screenTimeThreshold').value),
+                         notifications_enabled: document.getElementById('notificationsEnabled').checked
+                     };
+                     
+                     try {
+                         const response = await fetch('/api/user-thresholds', {
+                             method: 'POST',
+                             headers: {
+                                 'Content-Type': 'application/json',
+                             },
+                             body: JSON.stringify(thresholds)
+                         });
+                         
+                         if (!response.ok) {
+                             throw new Error('Failed to save thresholds');
+                         }
+                         
+                         showAlert('success', 'Your alert thresholds have been saved successfully!');
+                     } catch (error) {
+                         console.error('Error saving thresholds:', error);
+                         showAlert('error', 'Failed to save your threshold settings. Please try again.');
+                     }
+                 });
+                 
+                 // Helper function to show alerts
+                 function showAlert(type, message) {
+                     const alertContainer = document.createElement('div');
+                     alertContainer.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show`;
+                     alertContainer.innerHTML = `
+                         ${message}
+                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                     `;
+                     
+                     // Insert at the top of the settings container
+                     const settingsContainer = document.querySelector('.container');
+                     settingsContainer.insertBefore(alertContainer, settingsContainer.firstChild);
+                     
+                     // Auto dismiss after 5 seconds
+                     setTimeout(() => {
+                         alertContainer.classList.remove('show');
+                         setTimeout(() => alertContainer.remove(), 300);
+                     }, 5000);
+                 }
+                 </script>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-hand-index"></i> Accessibility
+            </div>
+            <div class="card-body">
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="gazeControl">
+                        <label class="form-check-label" for="gazeControl">Gaze Control</label>
+                    </div>
+                    <small class="text-muted">Control device with eye movements</small>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="blinkControl">
+                        <label class="form-check-label" for="blinkControl">Blink Control</label>
+                    </div>
+                    <small class="text-muted">Use double blinks as click actions</small>
+                </div>
+                
+                <div class="settings-option">
+                    <label for="gazeSensitivity" class="form-label">Gaze Control Sensitivity</label>
+                    <input type="range" class="form-range" min="1" max="10" value="5" id="gazeSensitivity">
+                    <div class="d-flex justify-content-between">
+                        <small>Low</small>
+                        <small>High</small>
+                    </div>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="voiceFeedback">
+                        <label class="form-check-label" for="voiceFeedback">Voice Feedback</label>
+                    </div>
+                    <small class="text-muted">Provide audio feedback for eye health alerts</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-database"></i> Data & Privacy
+            </div>
+            <div class="card-body">
+                <div class="settings-option">
+                    <label for="dataRetention" class="form-label">Data Retention Period</label>
+                    <select class="form-select" id="dataRetention">
+                        <option value="7">7 days</option>
+                        <option value="30" selected>30 days</option>
+                        <option value="90">90 days</option>
+                        <option value="365">1 year</option>
+                        <option value="0">Keep indefinitely</option>
+                    </select>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="allowAnalytics" checked>
+                        <label class="form-check-label" for="allowAnalytics">Share Anonymous Statistics</label>
+                    </div>
+                    <small class="text-muted">Help improve the app by sharing anonymous usage data</small>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="cloudBackup">
+                        <label class="form-check-label" for="cloudBackup">Cloud Backup</label>
+                    </div>
+                    <small class="text-muted">Back up your eye health data to the cloud</small>
+                </div>
+                
+                <div class="settings-option">
+                    <button class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-trash"></i> Delete All Data
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-download"></i> Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-camera"></i> Camera
+            </div>
+            <div class="card-body">
+                <div class="settings-option">
+                    <label for="cameraSelection" class="form-label">Camera Selection</label>
+                    <select class="form-select" id="cameraSelection">
+                        <option value="front" selected>Front Camera</option>
+                        <option value="back">Back Camera</option>
+                        <option value="external">External Camera (if connected)</option>
+                    </select>
+                </div>
+                
+                <div class="settings-option">
+                    <label for="cameraResolution" class="form-label">Camera Resolution</label>
+                    <select class="form-select" id="cameraResolution">
+                        <option value="low">Low (saves battery)</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High (better detection)</option>
+                    </select>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="saveScreenshots">
+                        <label class="form-check-label" for="saveScreenshots">Save Screenshots</label>
+                    </div>
+                    <small class="text-muted">Save screenshots when drowsiness is detected</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-info-circle"></i> About
+            </div>
+            <div class="card-body">
+                <p><strong>EyeCare AI</strong> v1.0.0</p>
+                <p>© 2025 EyeCare AI</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-question-circle"></i> Help & Support
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-book"></i> User Guide
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-shield-check"></i> Privacy Policy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <button class="btn btn-primary">
+            <i class="bi bi-save"></i> Save Settings
+        </button>
+        <button class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset to Defaults
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Load saved settings
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSavedSettings();
+    });
+    
+    function loadSavedSettings() {
+        // Load from localStorage first
+        const savedSettings = localStorage.getItem('eyecareSettings');
+        if (savedSettings) {
+            try {
+                const settings = JSON.parse(savedSettings);
+                applySettings(settings);
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
+        }
+        
+        // Load from server
+        fetch('/api/get-settings')
+            .then(response => response.json())
+            .then(settings => {
+                if (settings && settings.status !== 'error') {
+                    applySettings(settings);
+                    localStorage.setItem('eyecareSettings', JSON.stringify(settings));
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching settings:', error);
+            });
+    }
+    
+    function applySettings(settings) {
+        // Apply all settings to form elements
+        Object.keys(settings).forEach(key => {
+            const element = document.getElementById(key);
+            if (element) {
+                if (element.type === 'checkbox') {
+                    element.checked = settings[key];
+                    // Trigger change event for special handling
+                    if (key === 'darkModeToggle') {
+                        element.dispatchEvent(new Event('change'));
+                    }
+                } else {
+                    element.value = settings[key];
+                }
+            }
+        });
+        
+        // Apply voice feedback setting
+        voiceFeedbackEnabled = settings.voiceFeedback || false;
+        
+        // Update range displays
+        document.querySelectorAll('input[type="range"]').forEach(range => {
+            range.dispatchEvent(new Event('input'));
+        });
+    }
+    
+    // Update reminder interval
+    function updateReminderInterval() {
+        const intervalSelect = document.getElementById('breakInterval');
+        const selectedInterval = intervalSelect.value;
+        
+        localStorage.setItem('reminderInterval', selectedInterval);
+        
+        // Show confirmation message
+        const confirmationMessage = document.createElement('div');
+        confirmationMessage.className = 'alert alert-success alert-dismissible fade show mt-2';
+        confirmationMessage.innerHTML = `
+            <strong>Reminder interval updated!</strong> Break reminders will now appear every ${selectedInterval} minutes.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const breakIntervalContainer = document.querySelector('.settings-option');
+        breakIntervalContainer.appendChild(confirmationMessage);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (confirmationMessage.parentNode) {
+                confirmationMessage.remove();
+            }
+        }, 3000);
+        
+        console.log(`Reminder interval set to ${selectedInterval} minutes`);
+    }
+    
+    // Handle dark mode toggle
+    document.getElementById('darkModeToggle').addEventListener('change', function() {
+        if (this.checked) {
+            document.body.classList.add('bg-dark', 'text-light');
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.add('bg-dark', 'text-light', 'border-secondary');
+            });
+            document.querySelectorAll('.card-header').forEach(header => {
+                header.classList.add('bg-dark', 'text-light', 'border-secondary');
+            });
+            document.querySelectorAll('.navbar').forEach(nav => {
+                nav.classList.remove('navbar-light', 'bg-light');
+                nav.classList.add('navbar-dark', 'bg-dark');
+            });
+            document.querySelectorAll('.settings-option').forEach(option => {
+                option.classList.add('border-secondary');
+            });
+            document.querySelectorAll('.form-control, .form-select').forEach(input => {
+                input.classList.add('bg-secondary', 'text-light', 'border-dark');
+            });
+        } else {
+            document.body.classList.remove('bg-dark', 'text-light');
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('bg-dark', 'text-light', 'border-secondary');
+            });
+            document.querySelectorAll('.card-header').forEach(header => {
+                header.classList.remove('bg-dark', 'text-light', 'border-secondary');
+            });
+            document.querySelectorAll('.navbar').forEach(nav => {
+                nav.classList.add('navbar-light', 'bg-light');
+                nav.classList.remove('navbar-dark', 'bg-dark');
+            });
+            document.querySelectorAll('.settings-option').forEach(option => {
+                option.classList.remove('border-secondary');
+            });
+            document.querySelectorAll('.form-control, .form-select').forEach(input => {
+                input.classList.remove('bg-secondary', 'text-light', 'border-dark');
+            });
+        }
+    });
+    
+    // Update range input values
+    document.querySelectorAll('input[type="range"]').forEach(range => {
+        range.addEventListener('input', function() {
+            const valueDisplay = document.createElement('small');
+            valueDisplay.classList.add('ms-2', 'badge', 'bg-primary');
+            valueDisplay.textContent = this.value;
+            
+            // Remove existing value display if any
+            const existing = this.parentNode.querySelector('.badge');
+            if (existing) {
+                existing.remove();
+            }
+            
+            // Insert after the input
+            this.insertAdjacentElement('afterend', valueDisplay);
+        });
+        
+        // Trigger for initial display
+        range.dispatchEvent(new Event('input'));
+    });
+    
+    // Voice feedback implementation
+    let voiceFeedbackEnabled = false;
+    
+    function speakText(text) {
+        if (voiceFeedbackEnabled && 'speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            speechSynthesis.speak(utterance);
+        }
+    }
+    
+    // Voice feedback toggle
+    document.getElementById('voiceFeedback').addEventListener('change', function() {
+        voiceFeedbackEnabled = this.checked;
+        if (voiceFeedbackEnabled) {
+            speakText('Voice feedback enabled');
+        } else {
+            speechSynthesis.cancel();
+        }
+    });
+    
+    // Gaze control implementation
+    document.getElementById('gazeControl').addEventListener('change', function() {
+        if (this.checked) {
+            initializeGazeControl();
+            speakText('Gaze control activated');
+        } else {
+            disableGazeControl();
+            speakText('Gaze control deactivated');
+        }
+    });
+    
+    // Blink control implementation
+    document.getElementById('blinkControl').addEventListener('change', function() {
+        if (this.checked) {
+            initializeBlinkControl();
+            speakText('Blink control activated. Double blink to click');
+        } else {
+            disableBlinkControl();
+            speakText('Blink control deactivated');
+        }
+    });
+    
+    // Gaze control functions
+    function initializeGazeControl() {
+        // This would integrate with the eye tracking system
+        console.log('Gaze control initialized');
+        document.addEventListener('gazeMove', handleGazeMove);
+    }
+    
+    function disableGazeControl() {
+        document.removeEventListener('gazeMove', handleGazeMove);
+    }
+    
+    function handleGazeMove(event) {
+        // Move cursor based on gaze direction
+        const sensitivity = document.getElementById('gazeSensitivity').value / 10;
+        // Implementation would go here
+    }
+    
+    // Blink control functions
+    let blinkClickEnabled = false;
+    let lastBlinkTime = 0;
+    
+    function initializeBlinkControl() {
+        blinkClickEnabled = true;
+        document.addEventListener('blinkDetected', handleBlinkClick);
+    }
+    
+    function disableBlinkControl() {
+        blinkClickEnabled = false;
+        document.removeEventListener('blinkDetected', handleBlinkClick);
+    }
+    
+    function handleBlinkClick(event) {
+        if (!blinkClickEnabled) return;
+        
+        const now = Date.now();
+        if (now - lastBlinkTime < 500) { // Double blink detected
+            // Simulate click at current cursor position
+            const elementUnderCursor = document.elementFromPoint(event.clientX || 0, event.clientY || 0);
+            if (elementUnderCursor && elementUnderCursor.click) {
+                elementUnderCursor.click();
+                speakText('Clicked');
+            }
+        }
+        lastBlinkTime = now;
+    }
+    
+    // Save settings with real functionality
+    document.querySelector('.btn-primary').addEventListener('click', function() {
+        const settings = {
+            drowsinessAlerts: document.getElementById('drowsinessAlerts').checked,
+            blinkRateAlerts: document.getElementById('blinkRateAlerts').checked,
+            breakReminders: document.getElementById('breakReminders').checked,
+            breakInterval: document.getElementById('breakInterval').value,
+            darkMode: document.getElementById('darkModeToggle').checked,
+            highContrast: document.getElementById('highContrastMode').checked,
+            textSize: document.getElementById('textSize').value,
+            eyeDetectionSensitivity: document.getElementById('eyeDetectionSensitivity').value,
+            drowsinessThreshold: document.getElementById('drowsinessThreshold').value,
+            minHealthyBlinkRate: document.getElementById('minHealthyBlinkRate').value,
+            useInfraredMode: document.getElementById('useInfraredMode').checked,
+            gazeControl: document.getElementById('gazeControl').checked,
+            blinkControl: document.getElementById('blinkControl').checked,
+            gazeSensitivity: document.getElementById('gazeSensitivity').value,
+            voiceFeedback: document.getElementById('voiceFeedback').checked,
+            dataRetention: document.getElementById('dataRetention').value,
+            allowAnalytics: document.getElementById('allowAnalytics').checked,
+            cloudBackup: document.getElementById('cloudBackup').checked,
+            cameraSelection: document.getElementById('cameraSelection').value,
+            cameraResolution: document.getElementById('cameraResolution').value,
+            saveScreenshots: document.getElementById('saveScreenshots').checked
+        };
+        
+        // Save to localStorage and server
+        localStorage.setItem('eyecareSettings', JSON.stringify(settings));
+        
+        // Send to server
+        fetch('/api/save-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings)
+        })
+        .then(response => response.json())
+        .then(data => {
+            speakText('Settings saved successfully');
+            showAlert('success', 'Settings saved successfully!');
+        })
+        .catch(error => {
+            speakText('Error saving settings');
+            showAlert('danger', 'Error saving settings. Please try again.');
+        });
+    });
+    
+    function showAlert(type, message) {
+        const alert = document.createElement('div');
+        alert.classList.add('alert', `alert-${type}`, 'alert-dismissible', 'fade', 'show', 'position-fixed', 'bottom-0', 'end-0', 'm-3');
+        alert.innerHTML = `
+            <strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            const dismissButton = alert.querySelector('.btn-close');
+            if (dismissButton) {
+                dismissButton.click();
+            }
+        }, 3000);
+    }
+    
+    // Handle reset to defaults
+    document.querySelector('.btn-outline-secondary').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset all settings to their default values?')) {
+            document.querySelectorAll('.form-check-input').forEach(checkbox => {
+                if (checkbox.id === 'darkModeToggle' || 
+                    checkbox.id === 'highContrastMode' ||
+                    checkbox.id === 'useInfraredMode' ||
+                    checkbox.id === 'gazeControl' ||
+                    checkbox.id === 'blinkControl' ||
+                    checkbox.id === 'voiceFeedback' ||
+                    checkbox.id === 'saveScreenshots') {
+                    checkbox.checked = false;
+                } else {
+                    checkbox.checked = true;
+                }
+                
+                // Trigger change event for dark mode
+                if (checkbox.id === 'darkModeToggle') {
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            });
+            
+            document.getElementById('breakInterval').value = '20';
+            document.getElementById('textSize').value = 'medium';
+            document.getElementById('eyeDetectionSensitivity').value = '5';
+            document.getElementById('drowsinessThreshold').value = '60';
+            document.getElementById('minHealthyBlinkRate').value = '15';
+            document.getElementById('gazeSensitivity').value = '5';
+            document.getElementById('dataRetention').value = '30';
+            document.getElementById('cameraSelection').value = 'front';
+            document.getElementById('cameraResolution').value = 'medium';
+            
+            // Update range displays
+            document.querySelectorAll('input[type="range"]').forEach(range => {
+                range.dispatchEvent(new Event('input'));
+            });
+            
+            // Show reset confirmation
+            const alert = document.createElement('div');
+            alert.classList.add('alert', 'alert-info', 'alert-dismissible', 'fade', 'show', 'position-fixed', 'bottom-0', 'end-0', 'm-3');
+            alert.innerHTML = `
+                <strong>Reset Complete!</strong> All settings have been restored to their default values.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            // Auto dismiss after 3 seconds
+            setTimeout(() => {
+                const dismissButton = alert.querySelector('.btn-close');
+                if (dismissButton) {
+                    dismissButton.click();
+                }
+            }, 3000);
+        }
+    });
+</script>
+{% endblock %}

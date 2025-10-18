@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Exercise Tracker with Real Eye Tracking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #3a86ff;
+            --secondary-color: #2b2d42;
+            --accent-color: #48cae4;
+            --success-color: #2a9d8f;
+            --warning-color: #e9c46a;
+            --danger-color: #e76f51;
+            --light-bg: #f8f9fa;
+            --dark-bg: #212529;
+            --card-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            overflow-x: hidden;
+        }
+
+        #exercise-area {
+            min-height: 500px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            transition: background-color var(--transition-speed);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #exercise-area.active {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+
+        #animation {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            transition: all var(--transition-speed);
+        }
+
+        #target {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #dc3545 0%, #c82333 100%);
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.6);
+            transition: all 0.3s ease;
+            position: absolute;
+            z-index: 5;
+            display: none;
+            border: 3px solid white;
+            cursor: none;
+        }
+
+        #target.target-focused {
+            background: radial-gradient(circle, #28a745 0%, #1e7e34 100%);
+            box-shadow: 0 0 30px rgba(40, 167, 69, 0.8);
+            transform: scale(1.2);
+            animation: success-pulse 0.5s ease-in-out;
+        }
+
+        @keyframes success-pulse {
+            0%, 100% { transform: scale(1.2); }
+            50% { transform: scale(1.4); }
+        }
+
+        #gaze-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 0, 0.9);
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.7);
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            border: 2px solid #fff;
+            transition: all 0.1s ease;
+        }
+
+        .list-group-item {
+            border-radius: 10px !important;
+            margin-bottom: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.125);
+            transition: all var(--transition-speed);
+            cursor: pointer;
+        }
+
+        .list-group-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow);
+        }
+
+        .list-group-item.active {
+            background-color: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+            color: white;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            transition: all var(--transition-speed);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #2a75e6;
+            border-color: #2a75e6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.3);
+        }
+
+        #camera-container {
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            background: white;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border-radius: 15px;
+        }
+
+        #calibration-overlay {
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            text-align: center;
+        }
+
+        #ready-overlay {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+        }
+
+        #calibration-point {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: #dc3545;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 25px rgba(220, 53, 69, 0.8);
+            border: 3px solid white;
+            transition: all 0.3s ease;
+            animation: calibration-pulse 1.5s infinite;
+        }
+
+        @keyframes calibration-pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        #countdown-number {
+            font-size: 6rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: countdown-pulse 1s ease-in-out;
+        }
+
+        @keyframes countdown-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        #focus-indicator {
+            transition: all 0.3s ease;
+            z-index: 50;
+            opacity: 0.95;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            min-width: 200px;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            border: none;
+            transition: all var(--transition-speed);
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1rem 1.25rem;
+        }
+
+        .exercise-icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            #exercise-area { min-height: 400px; }
+            #camera-container { width: 150px !important; height: 120px !important; }
+            #countdown-number { font-size: 4rem; }
+        }
+
+        /* Python backend integration styles */
+        .tracking-status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .python-connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status-connected {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .status-disconnected {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .status-connecting {
+            background-color: #ffc107;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="python-connection-status status-disconnected">
+        <i class="bi bi-wifi-off"></i> Python Server: Disconnected
+    </div>
+
+    <div class="container-fluid">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <div class="mb-3">
+                    <i class="bi bi-eye-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                </div>
+                <h1 class="mb-3">Eye Exercise Tracker</h1>
+                <p class="lead">Advanced eye tracking exercises to reduce strain and improve eye health.</p>
+                <div class="d-flex justify-content-center gap-3 mb-3">
+                    <span class="badge bg-light text-dark p-2"><i class="bi bi-clock me-1"></i> Timed Sessions</span>
+                    <span class="badge bg-light text-dark p-2"><i class="bi bi-bullseye me-1"></i> Real Eye Tracking</span>
+                    <span class="badge bg-light text-dark p-2"><i class="bi bi-graph-up me-1"></i> Live Feedback</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Exercise Area</h5>
+                        <div>
+                            <span class="badge bg-primary" id="exercise-timer">00:00</span>
+                            <span class="badge bg-secondary" id="exercise-status">Ready</span>
+                        </div>
+                    </div>
+                    <div class="card-body" id="exercise-area">
+                        <!-- Tracking Status -->
+                        <div id="tracking-status" class="tracking-status" style="display: none;">
+                            <i class="bi bi-eye"></i> <span id="tracking-text">Tracking: Off</span>
+                        </div>
+
+                        <div id="animation">
+                            <div class="display-1 mb-4">
+                                <i class="bi bi-eye-fill" style="color: var(--primary-color); animation: pulse 2s infinite;"></i>
+                            </div>
+                            <h3 class="mb-3">Select an exercise to begin</h3>
+                            <p class="text-muted">Choose from our scientifically designed eye exercises</p>
+                            <div class="d-flex justify-content-center gap-3">
+                                <button id="start-tracking-btn" class="btn btn-outline-primary" onclick="toggleEyeTracking()">
+                                    <i class="bi bi-camera-video"></i> Start Eye Tracking
+                                </button>
+                                <button id="stop-tracking-btn" class="btn btn-outline-danger" onclick="stopEyeTracking()" style="display: none;">
+                                    <i class="bi bi-camera-video-off"></i> Stop Eye Tracking
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="target"></div>
+                        <div id="gaze-dot"></div>
+                        
+                        <!-- Calibration Overlay -->
+                        <div id="calibration-overlay" class="overlay" style="display: none;">
+                            <h3 class="mb-3"><i class="bi bi-crosshair me-2"></i>Eye Calibration</h3>
+                            <p class="text-center mb-4 px-4">
+                                Look directly at each red dot and keep your gaze steady.<br>
+                                The dot will turn green when calibration is complete.<br>
+                                <small class="text-warning">Keep your head still and look only with your eyes.</small>
+                            </p>
+                            <div id="calibration-point"></div>
+                            <div class="position-absolute bottom-0 start-0 end-0 p-3">
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div id="calibration-progress-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                                </div>
+                                <p class="text-center small mb-0">
+                                    Calibrating point <span id="calibration-point-number">1</span> of <span id="calibration-total-points">9</span>
+                                    <br><span id="calibration-instruction">Look at the red dot</span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Ready Countdown Overlay -->
+                        <div id="ready-overlay" class="overlay" style="display: none;">
+                            <h1 id="countdown-number">3</h1>
+                            <p class="mt-3 h5">Get ready to focus...</p>
+                        </div>
+                        
+                        <!-- Focus Indicator -->
+                        <div id="focus-indicator" class="position-absolute top-0 end-0 m-3 p-3 bg-white border" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i id="focus-icon" class="bi bi-eye-fill me-2" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <div id="focus-message" style="font-weight: 600;">Focus on target</div>
+                                    <div id="focus-accuracy" class="small">Accuracy: 0%</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Indicator -->
+                        <div id="progress-container" class="position-absolute bottom-0 start-0 end-0 p-3" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">Exercise Progress</small>
+                                <span id="exercise-progress" class="badge bg-primary">0%</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div id="progress-bar" class="progress-bar bg-primary" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Instructions</h5>
+                    </div>
+                    <div class="card-body" id="exercise-instructions">
+                        <div class="alert alert-info">
+                            <div class="d-flex">
+                                <i class="bi bi-lightbulb-fill me-3" style="font-size: 1.5rem;"></i>
+                                <div>
+                                    <p class="mb-2"><strong>How to use:</strong></p>
+                                    <ol class="mb-2">
+                                        <li>Click "Start Eye Tracking" below</li>
+                                        <li>Allow camera permission when prompted</li>
+                                        <li>Select an exercise from the list</li>
+                                        <li>Complete calibration by looking at red dots</li>
+                                        <li>Follow the target with your eyes during exercise</li>
+                                    </ol>
+                                    <p class="mb-0 small text-muted">Green indicator = Good focus | Red indicator = Need to refocus</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Exercise Selection</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group" id="exercise-list">
+                            <div class="list-group-item" data-exercise="center-focus">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-bullseye exercise-icon" style="color: var(--primary-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Center Focus</h6>
+                                            <p class="mb-0 small text-muted">Focus on a stationary center target</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">2 min</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item" data-exercise="figure-eight">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-infinity exercise-icon" style="color: var(--success-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Figure Eight</h6>
+                                            <p class="mb-0 small text-muted">Follow a figure-8 infinity pattern</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">3 min</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item" data-exercise="horizontal-shift">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-arrow-left-right exercise-icon" style="color: var(--warning-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Horizontal Shift</h6>
+                                            <p class="mb-0 small text-muted">Shift focus left and right</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">2 min</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item" data-exercise="vertical-shift">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-arrow-up-down exercise-icon" style="color: #6f42c1;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Vertical Shift</h6>
+                                            <p class="mb-0 small text-muted">Shift focus up and down</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">2 min</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item" data-exercise="circular-motion">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-arrow-clockwise exercise-icon" style="color: var(--accent-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Circular Motion</h6>
+                                            <p class="mb-0 small text-muted">Follow a circular path</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">3 min</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item" data-exercise="zoom-focus">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-zoom-in exercise-icon" style="color: var(--danger-color);"></i>
+                                        <div>
+                                            <h6 class="mb-1">Zoom Focus</h6>
+                                            <p class="mb-0 small text-muted">Focus on expanding/contracting target</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">2 min</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item" data-exercise="diagonal-sweep">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-slash-square exercise-icon" style="color: #fd7e14;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Diagonal Sweep</h6>
+                                            <p class="mb-0 small text-muted">Track diagonal movements</p>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">3 min</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Python Server Controls</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Server URL:</label>
+                            <input type="text" class="form-control" id="server-url" value="http://localhost:5001" placeholder="http://localhost:5001">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="connectToPythonServer()">
+                                <i class="bi bi-plug"></i> Connect to Python Server
+                            </button>
+                            <button class="btn btn-secondary" onclick="testPythonConnection()">
+                                <i class="bi bi-wifi"></i> Test Connection
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> Make sure the Python eye tracking server is running on the specified port.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Python Server Integration
+        let pythonServerUrl = 'http://localhost:5001';
+        let isPythonConnected = false;
+        let eyeTrackingActive = false;
+        let calibrationData = [];
+        let currentCalibrationPoint = 0;
+        const calibrationPoints = [
+            {x: 10, y: 10}, {x: 50, y: 10}, {x: 90, y: 10},
+            {x: 10, y: 50}, {x: 50, y: 50}, {x: 90, y: 50},
+            {x: 10, y: 90}, {x: 50, y: 90}, {x: 90, y: 90}
+        ];
+
+        // Connection management
+        async function connectToPythonServer() {
+            const url = document.getElementById('server-url').value;
+            pythonServerUrl = url;
+            
+            try {
+                const response = await fetch(`${pythonServerUrl}/status`);
+                if (response.ok) {
+                    isPythonConnected = true;
+                    updateConnectionStatus('connected');
+                    console.log('Connected to Python server');
+                } else {
+                    throw new Error('Server responded with error');
+                }
+            } catch (error) {
+                isPythonConnected = false;
+                updateConnectionStatus('disconnected');
+                console.error('Failed to connect to Python server:', error);
+                alert('Failed to connect to Python server. Make sure the server is running.');
+            }
+        }
+
+        async function testPythonConnection() {
+            if (!isPythonConnected) {
+                await connectToPythonServer();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${pythonServerUrl}/status`);
+                const data = await response.json();
+                alert(`Python Server Status: ${data.status}\nCamera: ${data.camera_status}`);
+            } catch (error) {
+                alert('Failed to test connection: ' + error.message);
+            }
+        }
+
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connection-status');
+            statusElement.className = `python-connection-status status-${status}`;
+            
+            switch(status) {
+                case 'connected':
+                    statusElement.innerHTML = '<i class="bi bi-wifi"></i> Python Server: Connected';
+                    break;
+                case 'disconnected':
+                    statusElement.innerHTML = '<i class="bi bi-wifi-off"></i> Python Server: Disconnected';
+                    break;
+                case 'connecting':
+                    statusElement.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Python Server: Connecting...';
+                    break;
+            }
+        }
+
+        // Eye tracking functions
+        async function toggleEyeTracking() {
+            if (!isPythonConnected) {
+                alert('Please connect to the Python server first.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${pythonServerUrl}/start_tracking`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    eyeTrackingActive = true;
+                    document.getElementById('start-tracking-btn').style.display = 'none';
+                    document.getElementById('stop-tracking-btn').style.display = 'inline-block';
+                    document.getElementById('tracking-status').style.display = 'block';
+                    document.getElementById('tracking-text').textContent = 'Tracking: Active';
+                    
+                    // Start receiving gaze data
+                    startGazeDataPolling();
+                } else {
+                    throw new Error('Failed to start tracking');
+                }
+            } catch (error) {
+                console.error('Error starting eye tracking:', error);
+                alert('Error starting eye tracking: ' + error.message);
+            }
+        }
+
+        async function stopEyeTracking() {
+            if (!eyeTrackingActive) return;
+
+            try {
+                const response = await fetch(`${pythonServerUrl}/stop_tracking`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    eyeTrackingActive = false;
+                    document.getElementById('start-tracking-btn').style.display = 'inline-block';
+                    document.getElementById('stop-tracking-btn').style.display = 'none';
+                    document.getElementById('tracking-status').style.display = 'none';
+                    document.getElementById('gaze-dot').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error stopping eye tracking:', error);
+            }
+        }
+
+        let gazePollingInterval;
+
+        function startGazeDataPolling() {
+            gazePollingInterval = setInterval(async () => {
+                if (!eyeTrackingActive) return;
+                
+                try {
+                    const response = await fetch(`${pythonServerUrl}/get_gaze_data`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.gaze_x !== null && data.gaze_y !== null) {
+                            updateGazePosition(data.gaze_x, data.gaze_y);
+                            updateBlinkStatus(data.blink_detected);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error getting gaze data:', error);
+                }
+            }, 100); // Poll every 100ms
+        }
+
+        function updateGazePosition(x, y) {
+            const gazeDot = document.getElementById('gaze-dot');
+            const exerciseArea = document.getElementById('exercise-area');
+            
+            if (gazeDot && exerciseArea) {
+                const rect = exerciseArea.getBoundingClientRect();
+                const dotX = (x / 100) * rect.width;
+                const dotY = (y / 100) * rect.height;
+                
+                gazeDot.style.left = `${dotX}px`;
+                gazeDot.style.top = `${dotY}px`;
+                gazeDot.style.display = 'block';
+            }
+        }
+
+        function updateBlinkStatus(blinkDetected) {
+            if (blinkDetected) {
+                document.getElementById('gaze-dot').style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
+                setTimeout(() => {
+                    document.getElementById('gaze-dot').style.backgroundColor = 'rgba(255, 255, 0, 0.9)';
+                }, 200);
+            }
+        }
+
+        // Calibration functions
+        async function startCalibration() {
+            if (!eyeTrackingActive) {
+                alert('Please start eye tracking first.');
+                return;
+            }
+
+            document.getElementById('calibration-overlay').style.display = 'flex';
+            currentCalibrationPoint = 0;
+            calibrationData = [];
+            showCalibrationPoint();
+        }
+
+        function showCalibrationPoint() {
+            if (currentCalibrationPoint >= calibrationPoints.length) {
+                finishCalibration();
+                return;
+            }
+
+            const point = calibrationPoints[currentCalibrationPoint];
+            const calibrationElement = document.getElementById('calibration-point');
+            const progressBar = document.getElementById('calibration-progress-bar');
+            
+            calibrationElement.style.left = `${point.x}%`;
+            calibrationElement.style.top = `${point.y}%`;
+            calibrationElement.style.display = 'block';
+            
+            document.getElementById('calibration-point-number').textContent = currentCalibrationPoint + 1;
+            document.getElementById('calibration-total-points').textContent = calibrationPoints.length;
+            
+            const progress = ((currentCalibrationPoint + 1) / calibrationPoints.length) * 100;
+            progressBar.style.width = `${progress}%`;
+
+            // Wait for user to look at the point
+            setTimeout(() => {
+                collectCalibrationData(point);
+            }, 2000);
+        }
+
+        async function collectCalibrationData(point) {
+            try {
+                const response = await fetch(`${pythonServerUrl}/get_gaze_data`);
+                const data = await response.json();
+                
+                if (data.gaze_x !== null && data.gaze_y !== null) {
+                    calibrationData.push({
+                        screen_x: point.x,
+                        screen_y: point.y,
+                        gaze_x: data.gaze_x,
+                        gaze_y: data.gaze_y
+                    });
+                }
+
+                currentCalibrationPoint++;
+                setTimeout(showCalibrationPoint, 500);
+            } catch (error) {
+                console.error('Error collecting calibration data:', error);
+                currentCalibrationPoint++;
+                setTimeout(showCalibrationPoint, 500);
+            }
+        }
+
+        async function finishCalibration() {
+            document.getElementById('calibration-overlay').style.display = 'none';
+            
+            try {
+                const response = await fetch(`${pythonServerUrl}/calibrate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ calibration_data: calibrationData })
+                });
+                
+                if (response.ok) {
+                    alert('Calibration completed successfully!');
+                } else {
+                    alert('Calibration failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error sending calibration data:', error);
+                alert('Error sending calibration data to server.');
+            }
+        }
+
+        // Exercise management (existing code with Python integration)
+        let currentExercise = null;
+        let exerciseTimer = null;
+        let exerciseStartTime = null;
+        let exercisePaused = false;
+
+        // Enhanced exercise functions with real tracking
+        document.addEventListener('DOMContentLoaded', function() {
+            // Connect to Python server on load
+            setTimeout(connectToPythonServer, 1000);
+            
+            // Exercise selection and management
+            const exerciseItems = document.querySelectorAll('#exercise-list .list-group-item');
+            exerciseItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    if (!isPythonConnected) {
+                        alert('Please connect to the Python server first.');
+                        return;
+                    }
+                    
+                    exerciseItems.forEach(ex => ex.classList.remove('active'));
+                    this.classList.add('active');
+                    currentExercise = this.getAttribute('data-exercise');
+                });
+            });
+
+            // Modified beginExercise to include calibration
+            window.beginExercise = async function() {
+                if (!currentExercise) {
+                    alert('Please select an exercise first.');
+                    return;
+                }
+
+                if (!eyeTrackingActive) {
+                    alert('Please start eye tracking first.');
+                    return;
+                }
+
+                // Start calibration before exercise
+                await startCalibration();
+                
+                // Continue with original exercise logic after calibration
+                setTimeout(() => {
+                    startExercise(currentExercise);
+                }, 1000);
+            };
+        });
+
+        // Original exercise functions (adapted for Python integration)
+        function startExercise(exerciseType) {
+            const exerciseArea = document.getElementById('exercise-area');
+            const animation = document.getElementById('animation');
+            const target = document.getElementById('target');
+            
+            exerciseArea.classList.add('active');
+            animation.style.display = 'none';
+            target.style.display = 'block';
+            
+            document.getElementById('exercise-status').textContent = 'Starting...';
+            document.getElementById('ready-overlay').style.display = 'flex';
+            
+            let countdown = 3;
+            const countdownElement = document.getElementById('countdown-number');
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('ready-overlay').style.display = 'none';
+                    document.getElementById('exercise-status').textContent = 'Active';
+                    document.getElementById('focus-indicator').style.display = 'block';
+                    document.getElementById('progress-container').style.display = 'block';
+                    
+                    startExerciseAnimation(exerciseType);
+                }
+            }, 1000);
+        }
+
+        function startExerciseAnimation(exerciseType) {
+            const target = document.getElementById('target');
+            const exerciseArea = document.getElementById('exercise-area');
+            
+            // Start real-time tracking validation
+            startTrackingValidation(exerciseType);
+            
+            // Original animation logic would go here
+            // For now, we'll use a simple center focus
+            target.style.left = '50%';
+            target.style.top = '50%';
+            target.style.transform = 'translate(-50%, -50%)';
+        }
+
+        function startTrackingValidation(exerciseType) {
+            // This function would validate real eye tracking against exercise requirements
+            // For now, we'll simulate validation
+            setInterval(() => {
+                if (!eyeTrackingActive) return;
+                
+                // Get current gaze position and validate against target
+                const accuracy = Math.random() * 100; // Placeholder
+                document.getElementById('focus-accuracy').textContent = `Accuracy: ${Math.round(accuracy)}%`;
+                
+                if (accuracy > 80) {
+                    document.getElementById('focus-message').textContent = 'Excellent focus!';
+                    document.getElementById('focus-icon').className = 'bi bi-eye-fill me-2 text-success';
+                } else if (accuracy > 50) {
+                    document.getElementById('focus-message').textContent = 'Good focus';
+                    document.getElementById('focus-icon').className = 'bi bi-eye-fill me-2 text-warning';
+                } else {
+                    document.getElementById('focus-message').textContent = 'Focus on target';
+                    document.getElementById('focus-icon').className = 'bi bi-eye-fill me-2 text-danger';
+                }
+            }, 500);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (eyeTrackingActive) {
+                stopEyeTracking();
+            }
+            if (gazePollingInterval) {
+                clearInterval(gazePollingInterval);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+{% extends "layout.html" %}
+
+{% block title %}Eye Health Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-bar-chart-line"></i> Eye Health Analytics</h2>
+            <p class="text-muted">Comprehensive analysis of your eye health data</p>
+        </div>
+    </div>
+    
+    <!-- Overall Health Score -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-heart-pulse"></i> Overall Health Score</h5>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-4">
+                            <div class="badge bg-primary" style="font-size: 2rem; padding: 1rem;">
+                                <span id="healthScoreValue">85</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h6 id="healthStatus" class="text-primary">Good</h6>
+                            <p class="text-muted mb-0" id="healthStatusDesc">Your eye health is in good condition. Keep up the good habits!</p>
+                        </div>
+                    </div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 85%" id="healthScoreBar"></div>
+                    </div>
+                    <small class="text-muted">Updated: <span id="lastUpdated">Just now</span></small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-primary" id="avgBlinkRate">15.2</h3>
+                    <p class="mb-1">Average Blink Rate</p>
+                    <small class="text-muted">blinks per minute</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-warning" id="drowsinessScore">25</h3>
+                    <p class="mb-1">Drowsiness Level</p>
+                    <small class="text-muted">percentage</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-info" id="screenTimeToday">4.2</h3>
+                    <p class="mb-1">Screen Time</p>
+                    <small class="text-muted">hours today</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-success" id="eyeStrainLevel">15</h3>
+                    <p class="mb-1">Eye Strain Level</p>
+                    <small class="text-muted">percentage</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Health Insights -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="bi bi-lightbulb"></i> Health Insights & Recommendations</h6>
+                </div>
+                <div class="card-body">
+                    <div id="insightsContainer">
+                        <div class="alert alert-info">
+                            <strong>INFO:</strong> Your blink rate is within the healthy range. Keep it up!
+                        </div>
+                        <div class="alert alert-success">
+                            <strong>SUCCESS:</strong> Low drowsiness level detected. You're staying alert!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="bi bi-trophy"></i> Achievements</h6>
+                </div>
+                <div class="card-body">
+                    <div id="achievementsContainer">
+                        <span class="badge bg-success me-2 mb-2">👁️ Healthy Blink Rate</span>
+                        <span class="badge bg-primary me-2 mb-2">⚡ Alert & Focused</span>
+                        <span class="badge bg-info me-2 mb-2">🏃‍♂️ Exercise Enthusiast</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Options -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="bi bi-download"></i> Export Options</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Export your eye health data for sharing with healthcare providers or personal analysis.</p>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary" onclick="exportData('json')">
+                            <i class="bi bi-file-earmark-code"></i> JSON
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="exportData('csv')">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="exportData('pdf')">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Analytics page loaded');
+        loadAnalytics();
+        
+        // Update analytics every 30 seconds
+        setInterval(loadAnalytics, 30000);
+    });
+    
+    function loadAnalytics() {
+        if (typeof eyeHealthAnalytics !== 'undefined' && eyeHealthAnalytics) {
+            const insights = eyeHealthAnalytics.generateHealthInsights();
+            const summary = eyeHealthAnalytics.getDailySummary();
+            
+            updateHealthScore(insights.overall);
+            updateMetrics(summary);
+            console.log('Analytics updated');
+        } else {
+            console.log('Analytics system not available yet');
+        }
+    }
+    
+    function updateHealthScore(score) {
+        const scoreElement = document.getElementById('healthScoreValue');
+        const statusElement = document.getElementById('healthStatus');
+        const descElement = document.getElementById('healthStatusDesc');
+        const barElement = document.getElementById('healthScoreBar');
+        
+        if (scoreElement) scoreElement.textContent = score;
+        if (barElement) barElement.style.width = score + '%';
+        
+        // Update status
+        if (score >= 80) {
+            if (statusElement) {
+                statusElement.textContent = 'Excellent';
+                statusElement.className = 'text-success';
+            }
+            if (descElement) descElement.textContent = 'Your eye health is excellent! Keep up the great work.';
+            if (barElement) barElement.className = 'progress-bar bg-success';
+        } else if (score >= 60) {
+            if (statusElement) {
+                statusElement.textContent = 'Good';
+                statusElement.className = 'text-primary';
+            }
+            if (descElement) descElement.textContent = 'Your eye health is good. Consider the recommendations below.';
+            if (barElement) barElement.className = 'progress-bar bg-primary';
+        } else if (score >= 40) {
+            if (statusElement) {
+                statusElement.textContent = 'Fair';
+                statusElement.className = 'text-warning';
+            }
+            if (descElement) descElement.textContent = 'Your eye health needs attention. Please follow the recommendations.';
+            if (barElement) barElement.className = 'progress-bar bg-warning';
+        } else {
+            if (statusElement) {
+                statusElement.textContent = 'Poor';
+                statusElement.className = 'text-danger';
+            }
+            if (descElement) descElement.textContent = 'Your eye health requires immediate attention. Please consult an eye care professional.';
+            if (barElement) barElement.className = 'progress-bar bg-danger';
+        }
+    }
+    
+    function updateMetrics(summary) {
+        const avgBlinkRateEl = document.getElementById('avgBlinkRate');
+        const drowsinessScoreEl = document.getElementById('drowsinessScore');
+        const screenTimeTodayEl = document.getElementById('screenTimeToday');
+        const eyeStrainLevelEl = document.getElementById('eyeStrainLevel');
+        const lastUpdatedEl = document.getElementById('lastUpdated');
+        
+        if (avgBlinkRateEl) avgBlinkRateEl.textContent = summary.avgBlinkRate.toFixed(1);
+        if (drowsinessScoreEl) drowsinessScoreEl.textContent = summary.drowsinessScore.toFixed(0) + '%';
+        if (screenTimeTodayEl) screenTimeTodayEl.textContent = (summary.screenTime / (60 * 60 * 1000)).toFixed(1);
+        if (eyeStrainLevelEl) eyeStrainLevelEl.textContent = summary.eyeStrainLevel.toFixed(0) + '%';
+        if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleTimeString();
+    }
+    
+    // Export data function - fixed version
+    function exportData(format) {
+        console.log('Export data called with format:', format);
+        
+        if (typeof eyeHealthAnalytics !== 'undefined' && eyeHealthAnalytics) {
+            const data = eyeHealthAnalytics.exportData();
+            
+            switch(format) {
+                case 'json':
+                    exportToJSON(data);
+                    break;
+                case 'csv':
+                    exportToCSV(data);
+                    break;
+                case 'pdf':
+                    exportToPDF(data);
+                    break;
+                default:
+                    alert('Unknown export format: ' + format);
+            }
+        } else {
+            // Create sample data if analytics not available
+            const sampleData = {
+                summary: {
+                    date: new Date().toLocaleDateString(),
+                    avgBlinkRate: 15.2,
+                    drowsinessScore: 25,
+                    eyeStrainLevel: 15,
+                    screenTime: 4.2 * 60 * 60 * 1000,
+                    overallScore: 85
+                },
+                exportDate: new Date()
+            };
+            
+            switch(format) {
+                case 'json':
+                    exportToJSON(sampleData);
+                    break;
+                case 'csv':
+                    exportToCSV(sampleData);
+                    break;
+                case 'pdf':
+                    exportToPDF(sampleData);
+                    break;
+            }
+        }
+    }
+    
+    function exportToJSON(data) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eye-health-analytics-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    
+    function exportToCSV(data) {
+        const csvData = [];
+        csvData.push(['Metric', 'Value']);
+        csvData.push(['Date', data.summary.date]);
+        csvData.push(['Average Blink Rate', data.summary.avgBlinkRate.toFixed(1) + ' bpm']);
+        csvData.push(['Drowsiness Score', data.summary.drowsinessScore.toFixed(0) + '%']);
+        csvData.push(['Eye Strain Level', data.summary.eyeStrainLevel.toFixed(0) + '%']);
+        csvData.push(['Screen Time', (data.summary.screenTime / (60 * 60 * 1000)).toFixed(1) + ' hours']);
+        csvData.push(['Overall Health Score', data.summary.overallScore]);
+        
+        const csvContent = csvData.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eye-health-data-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    
+    function exportToPDF(data) {
+        const printContent = `
+            <h1>Eye Health Analytics Report</h1>
+            <h2>Generated: ${new Date().toLocaleDateString()}</h2>
+            <table border="1" style="border-collapse: collapse; width: 100%;">
+                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><td>Health Score</td><td>${data.summary.overallScore}/100</td></tr>
+                <tr><td>Average Blink Rate</td><td>${data.summary.avgBlinkRate.toFixed(1)} bpm</td></tr>
+                <tr><td>Drowsiness Score</td><td>${data.summary.drowsinessScore.toFixed(0)}%</td></tr>
+                <tr><td>Eye Strain Level</td><td>${data.summary.eyeStrainLevel.toFixed(0)}%</td></tr>
+                <tr><td>Screen Time</td><td>${(data.summary.screenTime / (60 * 60 * 1000)).toFixed(1)} hours</td></tr>
+            </table>
+        `;
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Eye Health Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        h1 { color: #007bff; }
+                        h2 { color: #333; }
+                        table { margin-top: 20px; }
+                        th, td { padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                    </style>
+                </head>
+                <body>${printContent}</body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+</script>
+{% endblock %}
