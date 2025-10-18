@@ -1,7 +1,7 @@
 
 # EyeCare AI - Advanced Eye Health Monitoring Web Application
 
-![EyeCare AI](https://img.shields.io/badge/EyeCare-AI-blue) ![Python](https://img.shields.io/badge/Python-3.8+-green) ![Flask](https://img.shields.io/badge/Flask-2.0+-orange) ![MediaPipe](https://img.shields.io/badge/MediaPipe-Computer%20Vision-red)
+![AI](https://img.shields.io/badge/AI-blue) ![Python](https://img.shields.io/badge/Python-green) ![Flask](https://img.shields.io/badge/Flask-orange) ![MediaPipe](https://img.shields.io/badge/MediaPipe-Computer%20Vision-red)
 
 A comprehensive web application for real-time eye health monitoring and drowsiness detection using advanced computer vision technologies. Track your eye health metrics, view detailed analytics, and receive personalized insights to maintain optimal eye wellness.
 
@@ -240,10 +240,6 @@ A comprehensive web application for real-time eye health monitoring and drowsine
 4. Use the 20-20-20 rule reminders to maintain eye health
 5. Review session data to optimize work habits
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
 ### **Development Setup**
 1. Fork the repository
 2. Create a feature branch
@@ -251,42 +247,9 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 4. Test thoroughly
 5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🎯 Roadmap
-
-### **Upcoming Features**
-- [ ] Enhanced AI recommendations
-- [ ] Advanced sleep pattern analysis
-- [ ] Integration with health tracking platforms
-- [ ] Multi-language support
-- [ ] Cloud synchronization options
-- [ ] Advanced biometric analysis
-
-### **Long-term Goals**
-- [ ] Clinical trial validation
-- [ ] Medical device certification
-- [ ] AI-powered health predictions
-- [ ] Integration with smart glasses
-- [ ] Workplace wellness platforms
-
-## 🙏 Acknowledgments
-
-- **MediaPipe Team** - For the excellent computer vision library
-- **TensorFlow Team** - For machine learning framework
-- **Flask Community** - For the web framework
-- **Bootstrap Team** - For the UI framework
-
-## 📞 Support
-
-For support, please open an issue on GitHub or contact us at support@eyecareai.com
-
----
 
 **Made with ❤️ for better eye health worldwide**
 
-![GitHub stars](https://img.shields.io/github/stars/yourusername/eyecare-ai)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/eyecare-ai)
-![GitHub issues](https://img.shields.io/github/issues/yourusername/eyecare-ai)
+![GitHub stars](https://github.com/jothi-keerthana19/Optivue)
+![GitHub forks](https://github.com/jothi-keerthana19/Optivue)
+![GitHub issues](https://github.com/jothi-keerthana19/Optivue)
